@@ -11,8 +11,8 @@ import type { Employee, TestSession } from '@/types';
 export function ResultsDashboard() {
   const [employees] = useLocalStorage<Employee[]>('employees', []);
   const [testSessions] = useLocalStorage<TestSession[]>('testSessions', []);
-  const [filterManager, setFilterManager] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterManager, setFilterManager] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterEmployee, setFilterEmployee] = useState('');
 
   const managers = useMemo(() => {
@@ -31,10 +31,10 @@ export function ResultsDashboard() {
       return { session, employee };
     }).filter(result => result.employee);
 
-    if (filterManager) {
+    if (filterManager && filterManager !== 'all') {
       filtered = filtered.filter(result => result.employee?.manager === filterManager);
     }
-    if (filterDepartment) {
+    if (filterDepartment && filterDepartment !== 'all') {
       filtered = filtered.filter(result => result.employee?.department === filterDepartment);
     }
     if (filterEmployee) {
@@ -127,7 +127,7 @@ export function ResultsDashboard() {
                   <SelectValue placeholder="Tous les managers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les managers</SelectItem>
+                  <SelectItem value="all">Tous les managers</SelectItem>
                   {managers.map(manager => (
                     <SelectItem key={manager} value={manager}>{manager}</SelectItem>
                   ))}
@@ -141,7 +141,7 @@ export function ResultsDashboard() {
                   <SelectValue placeholder="Tous les pôles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les pôles</SelectItem>
+                  <SelectItem value="all">Tous les pôles</SelectItem>
                   {departments.map(dept => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
