@@ -1,8 +1,22 @@
+
 export interface Question {
   id: string;
   question: string;
   choices: string[];
   correctAnswer: number;
+  category?: string;
+  createdAt: Date;
+}
+
+export interface Quiz {
+  id: string;
+  name: string;
+  description: string;
+  questions: string[]; // Array of question IDs
+  accessCode: string;
+  status: 'active' | 'inactive';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Employee {
@@ -19,7 +33,15 @@ export interface Employee {
 
 export interface TestSession {
   id: string;
-  employeeId: string;
+  quizId: string;
+  employeeInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    manager: string;
+    department: string;
+    level: 'C1' | 'C2' | 'C3';
+  };
   status: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
   startedAt?: Date;
   completedAt?: Date;

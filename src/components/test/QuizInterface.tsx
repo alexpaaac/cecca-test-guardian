@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,17 +9,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Employee, TestSession, Question } from '@/types';
+import type { Quiz, TestSession, Question } from '@/types';
 
 interface QuizInterfaceProps {
-  employee: Employee;
+  quiz: Quiz;
   session: TestSession;
   onComplete: (session: TestSession) => void;
   onCancel: (session: TestSession) => void;
 }
 
-export function QuizInterface({ employee, session, onComplete, onCancel }: QuizInterfaceProps) {
-  const [questions] = useLocalStorage<Question[]>('questions', []);
+export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInterfaceProps) {
+  const [allQuestions] = useLocalStorage<Question[]>('questions', []);
   const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>(session.answers || []);
@@ -27,9 +28,11 @@ export function QuizInterface({ employee, session, onComplete, onCancel }: QuizI
   const [showWarning, setShowWarning] = useState(false);
   const { toast } = useToast();
 
+  // Get questions for this quiz
+  const questions = allQuestions.filter(q => quiz.questions.includes(q.id));
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
 
   // Anti-cheat system
   const handleVisibilityChange = useCallback(() => {
@@ -167,7 +170,7 @@ export function QuizInterface({ employee, session, onComplete, onCancel }: QuizI
       }
     });
 
-    const score = Math.round((correctAnswers / questions.length) * 100);
+    const score = questions.length > 0 ? Math.round((correctAnswers / questions.length) * 100) : 0;
 
     const completedSession = {
       ...session,
@@ -188,14 +191,16 @@ export function QuizInterface({ employee, session, onComplete, onCancel }: QuizI
       );
 
       const webhookData = {
-        prenom: employee.firstName,
-        nom: employee.lastName,
-        email: employee.email,
-        manager: employee.manager,
-        pole: employee.department,
-        niveau: employee.level,
+        prenom: session.employeeInfo.firstName,
+        nom: session.employeeInfo.lastName,
+        email: session.employeeInfo.email,
+        manager: session.employeeInfo.manager,
+        pole: session.employeeInfo.department,
+        niveau: session.employeeInfo.level,
+        questionnaire: quiz.name,
         reponses: finalAnswers,
         corrections: corrections,
+        score: score,
       };
 
       await fetch('https://alexpaac.app.n8n.cloud/webhook/10ce7334-f210-4720-b45b-e53f9bc7b400', {
@@ -215,7 +220,7 @@ export function QuizInterface({ employee, session, onComplete, onCancel }: QuizI
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <p className="text-muted-foreground">Aucune question disponible pour le moment.</p>
+          <p className="text-muted-foreground">Aucune question disponible pour ce questionnaire.</p>
         </CardContent>
       </Card>
     );
@@ -235,8 +240,9 @@ export function QuizInterface({ employee, session, onComplete, onCancel }: QuizI
 
       <div className="flex items-center justify-between mb-4">
         <div>
+          <h2 className="text-xl font-semibold">{quiz.name}</h2>
           <p className="text-sm text-muted-foreground">
-            {employee.firstName} {employee.lastName} - Niveau {employee.level}
+            {session.employeeInfo.firstName} {session.employeeInfo.lastName} - Niveau {session.employeeInfo.level}
           </p>
         </div>
         <div className="text-sm text-muted-foreground">

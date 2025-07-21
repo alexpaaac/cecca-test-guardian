@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,46 +7,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, Users, Filter } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Employee, TestSession } from '@/types';
+import type { Quiz, TestSession } from '@/types';
 
 export function ResultsDashboard() {
-  const [employees] = useLocalStorage<Employee[]>('employees', []);
+  const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
   const [testSessions] = useLocalStorage<TestSession[]>('testSessions', []);
+  const [filterQuiz, setFilterQuiz] = useState('all');
   const [filterManager, setFilterManager] = useState('all');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterEmployee, setFilterEmployee] = useState('');
 
   const managers = useMemo(() => {
-    const managerSet = new Set(employees.map(emp => emp.manager).filter(Boolean));
+    const managerSet = new Set(testSessions.map(session => session.employeeInfo.manager).filter(Boolean));
     return Array.from(managerSet);
-  }, [employees]);
+  }, [testSessions]);
 
   const departments = useMemo(() => {
-    const deptSet = new Set(employees.map(emp => emp.department).filter(Boolean));
+    const deptSet = new Set(testSessions.map(session => session.employeeInfo.department).filter(Boolean));
     return Array.from(deptSet);
-  }, [employees]);
+  }, [testSessions]);
 
   const filteredResults = useMemo(() => {
     let filtered = testSessions.map(session => {
-      const employee = employees.find(emp => emp.id === session.employeeId);
-      return { session, employee };
-    }).filter(result => result.employee);
+      const quiz = quizzes.find(q => q.id === session.quizId);
+      return { session, quiz };
+    }).filter(result => result.quiz);
 
+    if (filterQuiz && filterQuiz !== 'all') {
+      filtered = filtered.filter(result => result.quiz?.id === filterQuiz);
+    }
     if (filterManager && filterManager !== 'all') {
-      filtered = filtered.filter(result => result.employee?.manager === filterManager);
+      filtered = filtered.filter(result => result.session.employeeInfo.manager === filterManager);
     }
     if (filterDepartment && filterDepartment !== 'all') {
-      filtered = filtered.filter(result => result.employee?.department === filterDepartment);
+      filtered = filtered.filter(result => result.session.employeeInfo.department === filterDepartment);
     }
     if (filterEmployee) {
       filtered = filtered.filter(result => 
-        result.employee?.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
-        result.employee?.lastName.toLowerCase().includes(filterEmployee.toLowerCase())
+        result.session.employeeInfo.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
+        result.session.employeeInfo.lastName.toLowerCase().includes(filterEmployee.toLowerCase())
       );
     }
 
     return filtered;
-  }, [testSessions, employees, filterManager, filterDepartment, filterEmployee]);
+  }, [testSessions, quizzes, filterQuiz, filterManager, filterDepartment, filterEmployee]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -119,7 +124,21 @@ export function ResultsDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="filter-quiz">Questionnaire</Label>
+              <Select value={filterQuiz} onValueChange={setFilterQuiz}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les questionnaires" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les questionnaires</SelectItem>
+                  {quizzes.map(quiz => (
+                    <SelectItem key={quiz.id} value={quiz.id}>{quiz.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label htmlFor="filter-manager">Manager</Label>
               <Select value={filterManager} onValueChange={setFilterManager}>
@@ -180,6 +199,7 @@ export function ResultsDashboard() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Collaborateur</th>
+                    <th className="text-left p-2">Questionnaire</th>
                     <th className="text-left p-2">Manager</th>
                     <th className="text-left p-2">Pôle</th>
                     <th className="text-left p-2">Niveau</th>
@@ -189,14 +209,15 @@ export function ResultsDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResults.map(({ session, employee }) => (
+                  {filteredResults.map(({ session, quiz }) => (
                     <tr key={session.id} className="border-b">
                       <td className="p-2">
-                        {employee?.firstName} {employee?.lastName}
+                        {session.employeeInfo.firstName} {session.employeeInfo.lastName}
                       </td>
-                      <td className="p-2">{employee?.manager || '-'}</td>
-                      <td className="p-2">{employee?.department || '-'}</td>
-                      <td className="p-2">{employee?.level}</td>
+                      <td className="p-2">{quiz?.name || '-'}</td>
+                      <td className="p-2">{session.employeeInfo.manager || '-'}</td>
+                      <td className="p-2">{session.employeeInfo.department || '-'}</td>
+                      <td className="p-2">{session.employeeInfo.level}</td>
                       <td className="p-2">{getStatusBadge(session.status)}</td>
                       <td className="p-2">
                         {session.score !== undefined ? `${session.score}%` : '-'}
