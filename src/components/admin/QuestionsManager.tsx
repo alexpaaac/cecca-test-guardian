@@ -34,12 +34,12 @@ export function QuestionsManager() {
       const newQuestions: Question[] = [];
 
       for (let i = 0; i < lines.length; i++) {
-        const columns = lines[i].split('|').map(col => col.trim());
+        const columns = lines[i].split(',').map(col => col.trim());
         
         if (columns.length !== 5) {
           toast({
             title: "Erreur de format",
-            description: `Ligne ${i + 1}: Format attendu: question | choix1 | choix2 | choix3 | réponse`,
+            description: `Ligne ${i + 1}: Format attendu: question, choix1, choix2, choix3, réponse`,
             variant: "destructive",
           });
           return;
@@ -99,7 +99,7 @@ export function QuestionsManager() {
             Import des Questions (CSV)
           </CardTitle>
           <CardDescription>
-            Importez vos questions au format CSV : question | choix1 | choix2 | choix3 | réponse (1, 2 ou 3)
+            Importez vos questions au format CSV : question, choix1, choix2, choix3, réponse (1, 2 ou 3)
           </CardDescription>
         </CardHeader>
         <CardContent>
