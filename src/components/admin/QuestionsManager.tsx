@@ -281,7 +281,7 @@ export function QuestionsManager() {
             <div>
               <Label htmlFor="correct-answer">Bonne réponse</Label>
               <Select
-                value={questionForm.correctAnswer.toString()}
+                value={questionForm.correctAnswer?.toString() || "0"}
                 onValueChange={(value) => setQuestionForm({ ...questionForm, correctAnswer: parseInt(value) })}
               >
                 <SelectTrigger>
