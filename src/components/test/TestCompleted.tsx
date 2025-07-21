@@ -87,10 +87,20 @@ export function TestCompleted({ employee, session }: TestCompletedProps) {
             </ul>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-4">
+            <Button 
+              onClick={() => {
+                // Clear the test session to allow new tests
+                localStorage.removeItem('currentTestSession');
+                navigate('/test');
+              }}
+              className="bg-primary hover:bg-primary/90 mr-4"
+            >
+              Faire un nouveau test
+            </Button>
             <Button 
               onClick={() => navigate('/')}
-              className="bg-primary hover:bg-primary/90"
+              variant="outline"
             >
               <Home className="mr-2 h-4 w-4" />
               Retour à l'accueil

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,36 +6,28 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Quiz, TestSession } from '@/types';
+import type { Quiz, TestSession, Employee } from '@/types';
 
 interface LoginFormProps {
   onLogin: (quiz: Quiz, session: TestSession) => void;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
-  const [accessCode, setAccessCode] = useState('');
+  const [quizCode, setQuizCode] = useState('');
+  const [employeeCode, setEmployeeCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
+  const [employees] = useLocalStorage<Employee[]>('employees', []);
   const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
-  const [employeeInfo, setEmployeeInfo] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    manager: '',
-    department: '',
-    level: 'C1' as 'C1' | 'C2' | 'C3',
-  });
-  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const { toast } = useToast();
 
-  const handleCodeSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!accessCode) {
+    if (!quizCode || !employeeCode) {
       toast({
         title: "Erreur",
-        description: "Veuillez saisir votre code d'accès.",
+        description: "Veuillez saisir les deux codes d'accès.",
         variant: "destructive",
       });
       return;
@@ -47,44 +38,33 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const quiz = quizzes.find(q => q.accessCode === accessCode.toUpperCase() && q.status === 'active');
+    const quiz = quizzes.find(q => q.accessCode === quizCode.toUpperCase() && q.status === 'active');
+    const employee = employees.find(e => e.accessCode === employeeCode.toUpperCase());
     
     if (!quiz) {
       toast({
-        title: "Code invalide",
-        description: "Le code d'accès saisi n'est pas valide ou le questionnaire n'est pas actif.",
+        title: "Code questionnaire invalide",
+        description: "Le code questionnaire saisi n'est pas valide ou le questionnaire n'est pas actif.",
         variant: "destructive",
       });
       setIsLoading(false);
       return;
     }
 
-    setSelectedQuiz(quiz);
-    setShowEmployeeForm(true);
-    setIsLoading(false);
-  };
-
-  const handleEmployeeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedQuiz) return;
-
-    // Validate employee info
-    if (!employeeInfo.firstName.trim() || !employeeInfo.lastName.trim() || !employeeInfo.email.trim()) {
+    if (!employee) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        title: "Code collaborateur invalide",
+        description: "Le code collaborateur saisi n'est pas valide.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-
     // Check if employee already has a session for this quiz
     const existingSession = testSessions.find(session => 
-      session.quizId === selectedQuiz.id && 
-      session.employeeInfo.email === employeeInfo.email
+      session.quizId === quiz.id && 
+      session.employeeInfo.email === employee.email
     );
     
     if (existingSession) {
@@ -107,13 +87,20 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       }
       
       // Continue existing session
-      onLogin(selectedQuiz, existingSession);
+      onLogin(quiz, existingSession);
     } else {
       // Create new session
       const newSession: TestSession = {
         id: crypto.randomUUID(),
-        quizId: selectedQuiz.id,
-        employeeInfo,
+        quizId: quiz.id,
+        employeeInfo: {
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          email: employee.email,
+          manager: employee.manager,
+          department: employee.department,
+          level: employee.level,
+        },
         status: 'in_progress',
         startedAt: new Date(),
         answers: [],
@@ -121,163 +108,78 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       };
       
       setTestSessions([...testSessions, newSession]);
-      onLogin(selectedQuiz, newSession);
+      onLogin(quiz, newSession);
     }
 
     toast({
       title: "Connexion réussie",
-      description: `Bienvenue ${employeeInfo.firstName} ${employeeInfo.lastName}`,
+      description: `Bienvenue ${employee.firstName} ${employee.lastName}`,
     });
     
     setIsLoading(false);
-  };
-
-  const handleBack = () => {
-    setShowEmployeeForm(false);
-    setSelectedQuiz(null);
-    setEmployeeInfo({
-      firstName: '',
-      lastName: '',
-      email: '',
-      manager: '',
-      department: '',
-      level: 'C1',
-    });
   };
 
   return (
     <div className="max-w-md mx-auto">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">
-            {showEmployeeForm ? 'Informations Collaborateur' : 'Connexion au Test RH'}
-          </CardTitle>
+          <CardTitle className="text-2xl">Connexion au Test RH</CardTitle>
           <CardDescription>
-            {showEmployeeForm 
-              ? `Questionnaire : ${selectedQuiz?.name}` 
-              : 'Saisissez votre code d\'accès unique pour démarrer le test'
-            }
+            Saisissez vos codes d'accès pour démarrer le test
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!showEmployeeForm ? (
-            <form onSubmit={handleCodeSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="accessCode">Code d'accès</Label>
-                <Input
-                  id="accessCode"
-                  type="text"
-                  placeholder="Saisissez votre code"
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
-                  className="text-center font-mono text-lg"
-                  disabled={isLoading}
-                  autoFocus
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-primary hover:bg-primary/90" 
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="quizCode">Code Questionnaire</Label>
+              <Input
+                id="quizCode"
+                type="text"
+                placeholder="Code du questionnaire"
+                value={quizCode}
+                onChange={(e) => setQuizCode(e.target.value)}
+                className="text-center font-mono text-lg"
                 disabled={isLoading}
-              >
-                {isLoading ? (
-                  "Vérification..."
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Continuer
-                  </>
-                )}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleEmployeeSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">Prénom *</Label>
-                  <Input
-                    id="firstName"
-                    value={employeeInfo.firstName}
-                    onChange={(e) => setEmployeeInfo({ ...employeeInfo, firstName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Nom *</Label>
-                  <Input
-                    id="lastName"
-                    value={employeeInfo.lastName}
-                    onChange={(e) => setEmployeeInfo({ ...employeeInfo, lastName: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={employeeInfo.email}
-                  onChange={(e) => setEmployeeInfo({ ...employeeInfo, email: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="manager">Manager</Label>
-                <Input
-                  id="manager"
-                  value={employeeInfo.manager}
-                  onChange={(e) => setEmployeeInfo({ ...employeeInfo, manager: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="department">Pôle</Label>
-                <Input
-                  id="department"
-                  value={employeeInfo.department}
-                  onChange={(e) => setEmployeeInfo({ ...employeeInfo, department: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="level">Niveau</Label>
-                <select
-                  id="level"
-                  value={employeeInfo.level}
-                  onChange={(e) => setEmployeeInfo({ ...employeeInfo, level: e.target.value as 'C1' | 'C2' | 'C3' })}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="C1">C1</option>
-                  <option value="C2">C2</option>
-                  <option value="C3">C3</option>
-                </select>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Button type="button" variant="outline" onClick={handleBack} className="flex-1">
-                  Retour
-                </Button>
-                <Button type="submit" className="flex-1" disabled={isLoading}>
-                  {isLoading ? "Connexion..." : "Démarrer le test"}
-                </Button>
-              </div>
-            </form>
-          )}
-          
-          {!showEmployeeForm && (
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">Instructions importantes :</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Ne quittez pas cette page pendant le test</li>
-                <li>• Première sortie = avertissement</li>
-                <li>• Deuxième sortie = annulation du test</li>
-                <li>• Aucune navigation arrière possible</li>
-              </ul>
+                autoFocus
+              />
             </div>
-          )}
+            <div>
+              <Label htmlFor="employeeCode">Code Collaborateur</Label>
+              <Input
+                id="employeeCode"
+                type="text"
+                placeholder="Votre code collaborateur"
+                value={employeeCode}
+                onChange={(e) => setEmployeeCode(e.target.value)}
+                className="text-center font-mono text-lg"
+                disabled={isLoading}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                "Connexion..."
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Démarrer le test
+                </>
+              )}
+            </Button>
+          </form>
+          
+          <div className="mt-6 p-4 bg-muted rounded-lg">
+            <h4 className="font-semibold text-sm mb-2">Instructions importantes :</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Ne quittez pas cette page pendant le test</li>
+              <li>• Première sortie = avertissement</li>
+              <li>• Deuxième sortie = annulation du test</li>
+              <li>• Aucune navigation arrière possible</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </div>

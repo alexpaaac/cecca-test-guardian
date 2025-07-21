@@ -14,7 +14,9 @@ export default function TestInterface() {
   const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled'>('login');
 
   useEffect(() => {
-    if (testSession?.status === 'cancelled') {
+    if (!testSession) {
+      setTestStatus('login');
+    } else if (testSession?.status === 'cancelled') {
       setTestStatus('cancelled');
     } else if (testSession?.status === 'completed') {
       setTestStatus('completed');
