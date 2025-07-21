@@ -174,7 +174,7 @@ export function QuizManager() {
           <h2 className="text-2xl font-bold">Gestion des Questionnaires</h2>
           <p className="text-muted-foreground">Créez et gérez vos questionnaires avec codes d'accès</p>
         </div>
-        <Button onClick={() => setIsCreating(true)} disabled={isCreating || editingQuiz}>
+        <Button onClick={() => setIsCreating(true)} disabled={isCreating || !!editingQuiz}>
           <Plus className="h-4 w-4 mr-2" />
           Nouveau Questionnaire
         </Button>

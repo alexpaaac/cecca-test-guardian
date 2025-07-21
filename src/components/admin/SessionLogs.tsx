@@ -19,7 +19,7 @@ export function SessionLogs() {
     }> = [];
 
     testSessions.forEach(session => {
-      const employee = employees.find(emp => emp.id === session.employeeId);
+      const employee = employees.find(emp => emp.email === session.employeeInfo?.email);
       
       session.cheatingAttempts.forEach(attempt => {
         activities.push({
