@@ -42,14 +42,16 @@ export default function TestInterface() {
   };
 
   // Create a mock employee object for compatibility with existing components
-  const mockEmployee = testSession ? {
+  const mockCandidate = testSession ? {
     id: 'temp-id',
-    firstName: testSession.employeeInfo.firstName,
-    lastName: testSession.employeeInfo.lastName,
-    email: testSession.employeeInfo.email,
-    manager: testSession.employeeInfo.manager,
-    department: testSession.employeeInfo.department,
-    level: testSession.employeeInfo.level,
+    firstName: testSession.candidateInfo.firstName,
+    lastName: testSession.candidateInfo.lastName,
+    email: testSession.candidateInfo.email,
+    manager: testSession.candidateInfo.manager,
+    managerEmail: testSession.candidateInfo.email,
+    department: testSession.candidateInfo.department,
+    level: testSession.candidateInfo.level,
+    role: testSession.candidateInfo.role,
     accessCode: 'temp-code',
     createdAt: new Date(),
   } : null;
@@ -69,9 +71,9 @@ export default function TestInterface() {
         />
       )}
       
-      {testStatus === 'completed' && mockEmployee && testSession && (
+      {testStatus === 'completed' && mockCandidate && testSession && (
         <TestCompleted 
-          employee={mockEmployee}
+          employee={mockCandidate}
           session={testSession}
         />
       )}

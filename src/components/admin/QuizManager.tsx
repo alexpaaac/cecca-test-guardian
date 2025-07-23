@@ -60,6 +60,7 @@ export function QuizManager() {
       questions: selectedQuestions,
       accessCode: generateAccessCode(),
       status: 'active',
+      timePerQuestion: 60,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

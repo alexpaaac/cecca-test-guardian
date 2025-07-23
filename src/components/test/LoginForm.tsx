@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Quiz, TestSession, Employee } from '@/types';
+import type { Quiz, TestSession, Candidate } from '@/types';
 
 interface LoginFormProps {
   onLogin: (quiz: Quiz, session: TestSession) => void;
@@ -17,7 +17,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [employeeCode, setEmployeeCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
-  const [employees] = useLocalStorage<Employee[]>('employees', []);
+  const [employees] = useLocalStorage<Candidate[]>('employees', []);
   const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
   const { toast } = useToast();
 
@@ -64,7 +64,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     // Check if employee already has a session for this quiz
     const existingSession = testSessions.find(session => 
       session.quizId === quiz.id && 
-      session.employeeInfo.email === employee.email
+      session.candidateInfo.email === employee.email
     );
     
     if (existingSession) {
@@ -93,13 +93,14 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       const newSession: TestSession = {
         id: crypto.randomUUID(),
         quizId: quiz.id,
-        employeeInfo: {
+        candidateInfo: {
           firstName: employee.firstName,
           lastName: employee.lastName,
           email: employee.email,
           manager: employee.manager,
           department: employee.department,
           level: employee.level,
+          role: employee.role,
         },
         status: 'in_progress',
         startedAt: new Date(),

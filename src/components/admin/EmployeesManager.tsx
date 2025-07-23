@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Users, Copy, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Employee } from '@/types';
+import type { Candidate } from '@/types';
 
 export function EmployeesManager() {
-  const [employees, setEmployees] = useLocalStorage<Employee[]>('employees', []);
+  const [employees, setEmployees] = useLocalStorage<Candidate[]>('employees', []);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -47,7 +47,7 @@ export function EmployeesManager() {
       return;
     }
 
-    const newEmployee: Employee = {
+    const newEmployee: Candidate = {
       id: crypto.randomUUID(),
       ...formData,
       accessCode: generateAccessCode(),

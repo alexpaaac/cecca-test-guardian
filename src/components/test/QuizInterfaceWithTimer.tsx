@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,7 +72,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
         setHasWarning(true);
         setShowWarning(true);
         
-        // Update session in localStorage
         setTestSessions(sessions => 
           sessions.map(s => s.id === session.id ? updatedSession : s)
         );
@@ -84,7 +82,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
           variant: "destructive",
         });
       } else {
-        // Second offense - cancel test
         const cancelledSession = {
           ...updatedSession,
           status: 'cancelled' as const,
@@ -99,7 +96,7 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
         onCancel(cancelledSession);
       }
     }
-  }, [hasWarning, session, setTestSessions, onCancel, toast]);
+  }, [hasWarning, session, setTestSessions, onCancel, toast, totalTestTime]);
 
   const handleWindowBlur = useCallback(() => {
     const attempt = {
@@ -122,11 +119,9 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
 
-    // Prevent right-click context menu
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
     document.addEventListener('contextmenu', handleContextMenu);
 
-    // Prevent F12, Ctrl+Shift+I, etc.
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         e.key === 'F12' ||
@@ -165,7 +160,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     newAnswers[currentQuestionIndex] = selectedAnswer ?? -1; // -1 for no answer
     setAnswers(newAnswers);
 
-    // Update session in localStorage
     const updatedSession = {
       ...session,
       answers: newAnswers,
@@ -184,7 +178,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   };
 
   const handleSubmitTest = async (finalAnswers: number[]) => {
-    // Calculate score
     let correctAnswers = 0;
     finalAnswers.forEach((answer, index) => {
       if (questions[index] && answer === questions[index].correctAnswer) {
@@ -207,7 +200,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
       sessions.map(s => s.id === session.id ? completedSession : s)
     );
 
-    // Send webhook notification
     try {
       const corrections = finalAnswers.map((answer, index) => 
         questions[index] ? answer === questions[index].correctAnswer : false
@@ -231,8 +223,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
       await fetch('https://alexpaac.app.n8n.cloud/webhook/10ce7334-f210-4720-b45b-e53f9bc7b400', {
         method: 'GET',
         mode: 'no-cors',
-        // Note: For GET requests, we'd need to send data as query parameters
-        // But since the webhook URL is configured for GET, we'll just trigger it
       });
     } catch (error) {
       console.error('Failed to send webhook:', error);
