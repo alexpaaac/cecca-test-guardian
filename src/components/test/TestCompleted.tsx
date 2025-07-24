@@ -2,14 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Award, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { Employee, TestSession } from '@/types';
+import type { Candidate, TestSession } from '@/types';
 
 interface TestCompletedProps {
-  employee: Employee;
+  candidate: Candidate;
   session: TestSession;
 }
 
-export function TestCompleted({ employee, session }: TestCompletedProps) {
+export function TestCompleted({ candidate, session }: TestCompletedProps) {
   const navigate = useNavigate();
 
   const getScoreColor = (score: number) => {
@@ -33,7 +33,7 @@ export function TestCompleted({ employee, session }: TestCompletedProps) {
           </div>
           <CardTitle className="text-2xl text-green-600">Test Terminé !</CardTitle>
           <CardDescription>
-            Félicitations {employee.firstName}, vous avez terminé votre test RH
+            Félicitations {candidate.firstName}, vous avez terminé votre test RH
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -110,7 +110,7 @@ export function TestCompleted({ employee, session }: TestCompletedProps) {
           <div className="text-center pt-4 border-t">
             <p className="text-xs text-muted-foreground">
               Session ID: {session.id.substring(0, 8)}... • 
-              Employé: {employee.firstName} {employee.lastName} ({employee.level})
+              Candidat: {candidate.firstName} {candidate.lastName} ({candidate.level})
             </p>
           </div>
         </CardContent>

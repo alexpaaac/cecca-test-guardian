@@ -16,8 +16,10 @@ export function EmployeesManager() {
     lastName: '',
     email: '',
     manager: '',
+    managerEmail: '',
     department: '',
     level: 'C1' as 'C1' | 'C2' | 'C3',
+    role: 'Candidat' as 'Candidat' | 'Chef de mission' | 'RH',
   });
   const { toast } = useToast();
 
@@ -60,8 +62,10 @@ export function EmployeesManager() {
       lastName: '',
       email: '',
       manager: '',
+      managerEmail: '',
       department: '',
       level: 'C1',
+      role: 'Candidat',
     });
 
     toast({

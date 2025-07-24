@@ -3,28 +3,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Clock, Eye } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Employee, TestSession } from '@/types';
+import type { Candidate, TestSession } from '@/types';
 
 export function SessionLogs() {
-  const [employees] = useLocalStorage<Employee[]>('employees', []);
+  const [candidates] = useLocalStorage<Candidate[]>('candidates', []);
   const [testSessions] = useLocalStorage<TestSession[]>('testSessions', []);
 
   const suspiciousActivities = useMemo(() => {
     const activities: Array<{
       sessionId: string;
-      employee: Employee | undefined;
+      candidate: Candidate | undefined;
       activity: string;
       timestamp: Date;
       severity: 'low' | 'medium' | 'high';
     }> = [];
 
     testSessions.forEach(session => {
-      const employee = employees.find(emp => emp.email === session.employeeInfo?.email);
+      const candidate = candidates.find(emp => emp.email === session.candidateInfo?.email);
       
       session.cheatingAttempts.forEach(attempt => {
         activities.push({
           sessionId: session.id,
-          employee,
+          candidate,
           activity: attempt.type === 'tab_switch' ? 
             (attempt.warning ? 'Changement d\'onglet (1er avertissement)' : 'Changement d\'onglet (test annulé)') :
             'Perte de focus de la fenêtre',
@@ -39,7 +39,7 @@ export function SessionLogs() {
         if (duration < 5) {
           activities.push({
             sessionId: session.id,
-            employee,
+            candidate,
             activity: `Test terminé trop rapidement (${duration.toFixed(1)} min)`,
             timestamp: session.completedAt,
             severity: 'medium',
@@ -47,7 +47,7 @@ export function SessionLogs() {
         } else if (duration > 60) {
           activities.push({
             sessionId: session.id,
-            employee,
+            candidate,
             activity: `Test très long (${duration.toFixed(1)} min)`,
             timestamp: session.completedAt,
             severity: 'low',
@@ -57,7 +57,7 @@ export function SessionLogs() {
     });
 
     return activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [testSessions, employees]);
+  }, [testSessions, candidates]);
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -154,7 +154,7 @@ export function SessionLogs() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium">
-                        {activity.employee?.firstName} {activity.employee?.lastName}
+                        {activity.candidate?.firstName} {activity.candidate?.lastName}
                       </span>
                       {getSeverityBadge(activity.severity)}
                     </div>

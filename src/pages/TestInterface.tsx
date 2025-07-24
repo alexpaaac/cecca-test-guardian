@@ -73,7 +73,7 @@ export default function TestInterface() {
       
       {testStatus === 'completed' && mockCandidate && testSession && (
         <TestCompleted 
-          employee={mockCandidate}
+          candidate={mockCandidate}
           session={testSession}
         />
       )}
