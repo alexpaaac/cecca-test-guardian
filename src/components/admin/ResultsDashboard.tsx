@@ -21,12 +21,12 @@ export function ResultsDashboard() {
   const { toast } = useToast();
 
   const managers = useMemo(() => {
-    const managerSet = new Set(testSessions.map(session => session.employeeInfo.manager).filter(Boolean));
+    const managerSet = new Set(testSessions.map(session => session.candidateInfo.manager).filter(Boolean));
     return Array.from(managerSet);
   }, [testSessions]);
 
   const departments = useMemo(() => {
-    const deptSet = new Set(testSessions.map(session => session.employeeInfo.department).filter(Boolean));
+    const deptSet = new Set(testSessions.map(session => session.candidateInfo.department).filter(Boolean));
     return Array.from(deptSet);
   }, [testSessions]);
 
@@ -40,15 +40,15 @@ export function ResultsDashboard() {
       filtered = filtered.filter(result => result.quiz?.id === filterQuiz);
     }
     if (filterManager && filterManager !== 'all') {
-      filtered = filtered.filter(result => result.session.employeeInfo.manager === filterManager);
+      filtered = filtered.filter(result => result.session.candidateInfo.manager === filterManager);
     }
     if (filterDepartment && filterDepartment !== 'all') {
-      filtered = filtered.filter(result => result.session.employeeInfo.department === filterDepartment);
+      filtered = filtered.filter(result => result.session.candidateInfo.department === filterDepartment);
     }
     if (filterEmployee) {
       filtered = filtered.filter(result => 
-        result.session.employeeInfo.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
-        result.session.employeeInfo.lastName.toLowerCase().includes(filterEmployee.toLowerCase())
+        result.session.candidateInfo.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
+        result.session.candidateInfo.lastName.toLowerCase().includes(filterEmployee.toLowerCase())
       );
     }
 
@@ -85,7 +85,7 @@ export function ResultsDashboard() {
     // Scores by department
     const scoresByDept = departments.map(dept => {
       const deptSessions = filteredResults.filter(r => 
-        r.session.employeeInfo.department === dept && 
+        r.session.candidateInfo.department === dept && 
         r.session.status === 'completed'
       );
       const avgScore = deptSessions.reduce((acc, r) => acc + (r.session.score || 0), 0) / deptSessions.length || 0;
@@ -99,7 +99,7 @@ export function ResultsDashboard() {
     // Scores by manager
     const scoresByManager = managers.map(manager => {
       const managerSessions = filteredResults.filter(r => 
-        r.session.employeeInfo.manager === manager && 
+        r.session.candidateInfo.manager === manager && 
         r.session.status === 'completed'
       );
       const avgScore = managerSessions.reduce((acc, r) => acc + (r.session.score || 0), 0) / managerSessions.length || 0;
@@ -121,14 +121,14 @@ export function ResultsDashboard() {
   }, [filteredResults, departments, managers, stats]);
 
   const exportToCSV = () => {
-    const headers = ['Collaborateur', 'Email', 'Questionnaire', 'Manager', 'Pôle', 'Niveau', 'Statut', 'Score', 'Date Début', 'Date Fin'];
+    const headers = ['Candidat', 'Email', 'Questionnaire', 'Manager', 'Pôle', 'Niveau', 'Statut', 'Score', 'Date Début', 'Date Fin'];
     const csvData = filteredResults.map(({ session, quiz }) => [
-      `${session.employeeInfo.firstName} ${session.employeeInfo.lastName}`,
-      session.employeeInfo.email,
+      `${session.candidateInfo.firstName} ${session.candidateInfo.lastName}`,
+      session.candidateInfo.email,
       quiz?.name || '-',
-      session.employeeInfo.manager || '-',
-      session.employeeInfo.department || '-',
-      session.employeeInfo.level,
+      session.candidateInfo.manager || '-',
+      session.candidateInfo.department || '-',
+      session.candidateInfo.level,
       session.status,
       session.score !== undefined ? `${session.score}%` : '-',
       session.startedAt ? new Date(session.startedAt).toLocaleDateString('fr-FR') : '-',
@@ -366,12 +366,12 @@ export function ResultsDashboard() {
                   {filteredResults.map(({ session, quiz }) => (
                     <tr key={session.id} className="border-b">
                       <td className="p-2">
-                        {session.employeeInfo.firstName} {session.employeeInfo.lastName}
+                        {session.candidateInfo.firstName} {session.candidateInfo.lastName}
                       </td>
                       <td className="p-2">{quiz?.name || '-'}</td>
-                      <td className="p-2">{session.employeeInfo.manager || '-'}</td>
-                      <td className="p-2">{session.employeeInfo.department || '-'}</td>
-                      <td className="p-2">{session.employeeInfo.level}</td>
+                      <td className="p-2">{session.candidateInfo.manager || '-'}</td>
+                      <td className="p-2">{session.candidateInfo.department || '-'}</td>
+                      <td className="p-2">{session.candidateInfo.level}</td>
                       <td className="p-2">{getStatusBadge(session.status)}</td>
                       <td className="p-2">
                         {session.score !== undefined ? `${session.score}%` : '-'}

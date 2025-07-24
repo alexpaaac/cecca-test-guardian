@@ -17,7 +17,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [employeeCode, setEmployeeCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
-  const [employees] = useLocalStorage<Candidate[]>('employees', []);
+  const [candidates] = useLocalStorage<Candidate[]>('candidates', []);
   const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
   const { toast } = useToast();
 
@@ -39,7 +39,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const quiz = quizzes.find(q => q.accessCode === quizCode.toUpperCase() && q.status === 'active');
-    const employee = employees.find(e => e.accessCode === employeeCode.toUpperCase());
+    const candidate = candidates.find(c => c.accessCode === employeeCode.toUpperCase());
     
     if (!quiz) {
       toast({
@@ -51,20 +51,20 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       return;
     }
 
-    if (!employee) {
+    if (!candidate) {
       toast({
-        title: "Code collaborateur invalide",
-        description: "Le code collaborateur saisi n'est pas valide.",
+        title: "Code candidat invalide",
+        description: "Le code candidat saisi n'est pas valide.",
         variant: "destructive",
       });
       setIsLoading(false);
       return;
     }
 
-    // Check if employee already has a session for this quiz
+    // Check if candidate already has a session for this quiz
     const existingSession = testSessions.find(session => 
       session.quizId === quiz.id && 
-      session.candidateInfo.email === employee.email
+      session.candidateInfo.email === candidate.email
     );
     
     if (existingSession) {
@@ -94,13 +94,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         id: crypto.randomUUID(),
         quizId: quiz.id,
         candidateInfo: {
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          email: employee.email,
-          manager: employee.manager,
-          department: employee.department,
-          level: employee.level,
-          role: employee.role,
+          firstName: candidate.firstName,
+          lastName: candidate.lastName,
+          email: candidate.email,
+          manager: candidate.manager,
+          department: candidate.department,
+          level: candidate.level,
+          role: candidate.role,
         },
         status: 'in_progress',
         startedAt: new Date(),
@@ -114,7 +114,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
     toast({
       title: "Connexion réussie",
-      description: `Bienvenue ${employee.firstName} ${employee.lastName}`,
+      description: `Bienvenue ${candidate.firstName} ${candidate.lastName}`,
     });
     
     setIsLoading(false);
@@ -145,11 +145,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="employeeCode">Code Collaborateur</Label>
+              <Label htmlFor="candidateCode">Code Candidat</Label>
               <Input
-                id="employeeCode"
+                id="candidateCode"
                 type="text"
-                placeholder="Votre code collaborateur"
+                placeholder="Votre code candidat"
                 value={employeeCode}
                 onChange={(e) => setEmployeeCode(e.target.value)}
                 className="text-center font-mono text-lg"
