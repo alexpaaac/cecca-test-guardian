@@ -25,12 +25,20 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
   const { toast } = useToast();
 
   const managers = useMemo(() => {
-    const managerSet = new Set(testSessions.map(session => session.candidateInfo.manager).filter(Boolean));
+    const managerSet = new Set(
+      testSessions
+        .filter(session => session.candidateInfo && session.candidateInfo.manager)
+        .map(session => session.candidateInfo.manager)
+    );
     return Array.from(managerSet);
   }, [testSessions]);
 
   const departments = useMemo(() => {
-    const deptSet = new Set(testSessions.map(session => session.candidateInfo.department).filter(Boolean));
+    const deptSet = new Set(
+      testSessions
+        .filter(session => session.candidateInfo && session.candidateInfo.department)
+        .map(session => session.candidateInfo.department)
+    );
     return Array.from(deptSet);
   }, [testSessions]);
 
@@ -38,21 +46,26 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
     let filtered = testSessions.map(session => {
       const quiz = quizzes.find(q => q.id === session.quizId);
       return { session, quiz };
-    }).filter(result => result.quiz);
+    }).filter(result => result.quiz && result.session.candidateInfo);
 
     if (filterQuiz && filterQuiz !== 'all') {
       filtered = filtered.filter(result => result.quiz?.id === filterQuiz);
     }
     if (filterManager && filterManager !== 'all') {
-      filtered = filtered.filter(result => result.session.candidateInfo.manager === filterManager);
+      filtered = filtered.filter(result => 
+        result.session.candidateInfo && result.session.candidateInfo.manager === filterManager
+      );
     }
     if (filterDepartment && filterDepartment !== 'all') {
-      filtered = filtered.filter(result => result.session.candidateInfo.department === filterDepartment);
+      filtered = filtered.filter(result => 
+        result.session.candidateInfo && result.session.candidateInfo.department === filterDepartment
+      );
     }
     if (filterEmployee) {
       filtered = filtered.filter(result => 
-        result.session.candidateInfo.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
-        result.session.candidateInfo.lastName.toLowerCase().includes(filterEmployee.toLowerCase())
+        result.session.candidateInfo &&
+        (result.session.candidateInfo.firstName.toLowerCase().includes(filterEmployee.toLowerCase()) ||
+         result.session.candidateInfo.lastName.toLowerCase().includes(filterEmployee.toLowerCase()))
       );
     }
 
@@ -89,6 +102,7 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
     // Scores by department
     const scoresByDept = departments.map(dept => {
       const deptSessions = filteredResults.filter(r => 
+        r.session.candidateInfo && 
         r.session.candidateInfo.department === dept && 
         r.session.status === 'completed'
       );
@@ -103,6 +117,7 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
     // Scores by manager
     const scoresByManager = managers.map(manager => {
       const managerSessions = filteredResults.filter(r => 
+        r.session.candidateInfo && 
         r.session.candidateInfo.manager === manager && 
         r.session.status === 'completed'
       );
@@ -126,18 +141,20 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
 
   const exportToCSV = () => {
     const headers = ['Candidat', 'Email', 'Questionnaire', 'Manager', 'Pôle', 'Niveau', 'Statut', 'Score', 'Date Début', 'Date Fin'];
-    const csvData = filteredResults.map(({ session, quiz }) => [
-      `${session.candidateInfo.firstName} ${session.candidateInfo.lastName}`,
-      session.candidateInfo.email,
-      quiz?.name || '-',
-      session.candidateInfo.manager || '-',
-      session.candidateInfo.department || '-',
-      session.candidateInfo.level,
-      session.status,
-      session.score !== undefined ? `${session.score}%` : '-',
-      session.startedAt ? new Date(session.startedAt).toLocaleDateString('fr-FR') : '-',
-      session.completedAt ? new Date(session.completedAt).toLocaleDateString('fr-FR') : '-'
-    ]);
+    const csvData = filteredResults
+      .filter(({ session }) => session.candidateInfo)
+      .map(({ session, quiz }) => [
+        `${session.candidateInfo?.firstName || ''} ${session.candidateInfo?.lastName || ''}`,
+        session.candidateInfo?.email || '',
+        quiz?.name || '-',
+        session.candidateInfo?.manager || '-',
+        session.candidateInfo?.department || '-',
+        session.candidateInfo?.level || '',
+        session.status,
+        session.score !== undefined ? `${session.score}%` : '-',
+        session.startedAt ? new Date(session.startedAt).toLocaleDateString('fr-FR') : '-',
+        session.completedAt ? new Date(session.completedAt).toLocaleDateString('fr-FR') : '-'
+      ]);
 
     const csvContent = [headers, ...csvData]
       .map(row => row.map(cell => `"${cell}"`).join(','))
@@ -370,12 +387,15 @@ export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProp
                   {filteredResults.map(({ session, quiz }) => (
                     <tr key={session.id} className="border-b">
                       <td className="p-2">
-                        {session.candidateInfo.firstName} {session.candidateInfo.lastName}
+                        {session.candidateInfo ? 
+                          `${session.candidateInfo.firstName} ${session.candidateInfo.lastName}` : 
+                          'N/A'
+                        }
                       </td>
                       <td className="p-2">{quiz?.name || '-'}</td>
-                      <td className="p-2">{session.candidateInfo.manager || '-'}</td>
-                      <td className="p-2">{session.candidateInfo.department || '-'}</td>
-                      <td className="p-2">{session.candidateInfo.level}</td>
+                      <td className="p-2">{session.candidateInfo?.manager || '-'}</td>
+                      <td className="p-2">{session.candidateInfo?.department || '-'}</td>
+                      <td className="p-2">{session.candidateInfo?.level || '-'}</td>
                       <td className="p-2">{getStatusBadge(session.status)}</td>
                       <td className="p-2">
                         {session.score !== undefined ? `${session.score}%` : '-'}
