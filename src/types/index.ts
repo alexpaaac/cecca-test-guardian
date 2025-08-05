@@ -26,7 +26,7 @@ export interface QuizTemplate {
   name: string;
   description: string;
   role: 'Chef de mission' | 'RH' | 'Auditeur';
-  level: 'C1' | 'C2' | 'C3';
+  level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
   questions: string[];
   timePerQuestion: number;
   createdAt: Date;
@@ -40,7 +40,7 @@ export interface Candidate {
   manager: string;
   managerEmail: string;
   department: string;
-  level: 'C1' | 'C2' | 'C3';
+  level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
   role: 'Candidat' | 'Chef de mission' | 'RH';
   accessCode: string;
   createdAt: Date;
@@ -55,7 +55,7 @@ export interface TestSession {
     email: string;
     manager: string;
     department: string;
-    level: 'C1' | 'C2' | 'C3';
+    level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
     role: 'Candidat' | 'Chef de mission' | 'RH';
   };
   status: 'not_started' | 'in_progress' | 'completed' | 'cancelled';

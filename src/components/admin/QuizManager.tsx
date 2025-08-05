@@ -9,16 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, Copy, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Copy, RotateCcw, Target, Shuffle } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Quiz, Question } from '@/types';
+import type { Quiz, Question, QuizTemplate } from '@/types';
 
 export function QuizManager() {
   const [quizzes, setQuizzes] = useLocalStorage<Quiz[]>('quizzes', []);
   const [questions] = useLocalStorage<Question[]>('questions', []);
+  const [templates] = useLocalStorage<QuizTemplate[]>('quizTemplates', []);
   const [isCreating, setIsCreating] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [quizForm, setQuizForm] = useState({
     name: '',
     description: '',
@@ -153,9 +155,37 @@ export function QuizManager() {
     );
   };
 
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    
+    if (templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        setQuizForm({
+          name: template.name,
+          description: template.description,
+        });
+        
+        // If template has 40 questions, select 20 random ones
+        if (template.questions.length >= 40) {
+          const shuffled = [...template.questions].sort(() => 0.5 - Math.random());
+          setSelectedQuestions(shuffled.slice(0, 20));
+          
+          toast({
+            title: "Modèle appliqué",
+            description: `20 questions aléatoires sélectionnées parmi les ${template.questions.length} du modèle.`,
+          });
+        } else {
+          setSelectedQuestions(template.questions);
+        }
+      }
+    }
+  };
+
   const resetForm = () => {
     setQuizForm({ name: '', description: '' });
     setSelectedQuestions([]);
+    setSelectedTemplate('');
     setIsCreating(false);
     setEditingQuiz(null);
   };
@@ -212,6 +242,48 @@ export function QuizManager() {
                 placeholder="Description du questionnaire..."
               />
             </div>
+
+            {!editingQuiz && (
+              <div className="space-y-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <Label className="text-base font-medium">Utiliser un modèle prédéfini</Label>
+                </div>
+                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Sélectionner un modèle..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          <span>
+                            {template.name} - {template.level}
+                            {template.level.startsWith('C') ? ' (Collaborateur)' : ' (Chef de service)'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ({template.questions.length} questions)
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shuffle className="h-4 w-4" />
+                    <span>
+                      Modèle contenant {templates.find(t => t.id === selectedTemplate)?.questions.length || 0} questions.
+                      {(templates.find(t => t.id === selectedTemplate)?.questions.length || 0) >= 40 
+                        ? " 20 questions seront sélectionnées aléatoirement."
+                        : " Toutes les questions seront incluses."
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <Label>Questions sélectionnées ({selectedQuestions.length}/{questions.length})</Label>

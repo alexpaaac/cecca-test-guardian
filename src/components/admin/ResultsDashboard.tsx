@@ -11,7 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import type { Quiz, TestSession } from '@/types';
 
-export function ResultsDashboard() {
+interface ResultsDashboardProps {
+  isManagerView?: boolean;
+}
+
+export function ResultsDashboard({ isManagerView = false }: ResultsDashboardProps) {
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
   const [testSessions] = useLocalStorage<TestSession[]>('testSessions', []);
   const [filterQuiz, setFilterQuiz] = useState('all');

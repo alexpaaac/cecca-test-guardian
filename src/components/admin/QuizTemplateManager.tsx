@@ -21,7 +21,7 @@ export function QuizTemplateManager() {
     name: '',
     description: '',
     role: 'Chef de mission' as 'Chef de mission' | 'RH' | 'Auditeur',
-    level: 'C1' as 'C1' | 'C2' | 'C3',
+    level: 'C1' as 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2',
     timePerQuestion: 60,
   });
   const { toast } = useToast();
@@ -145,8 +145,27 @@ export function QuizTemplateManager() {
         <div>
           <h2 className="text-3xl font-bold text-primary">Modèles de Questionnaires</h2>
           <p className="text-muted-foreground mt-2">
-            Créez des modèles prédéfinis pour différents rôles et niveaux
+            Créez des modèles prédéfinis pour différents rôles et niveaux. Chaque modèle peut contenir jusqu'à 40 questions.
           </p>
+          <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <h4 className="font-medium text-accent-foreground mb-2">Modèles Collaborateurs</h4>
+                <ul className="text-muted-foreground space-y-1">
+                  <li><strong>C1:</strong> Collaborateur niveau 1 - Connaissances de base</li>
+                  <li><strong>C2:</strong> Collaborateur niveau 2 - Connaissances intermédiaires</li>
+                  <li><strong>C3:</strong> Collaborateur niveau 3 - Connaissances avancées</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-accent-foreground mb-2">Modèles Chefs de Service</h4>
+                <ul className="text-muted-foreground space-y-1">
+                  <li><strong>CS1:</strong> Chef de service niveau 1 - Management de base</li>
+                  <li><strong>CS2:</strong> Chef de service niveau 2 - Management avancé</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
         <Button
           onClick={() => setIsCreating(true)}
@@ -221,9 +240,11 @@ export function QuizTemplateManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="C1">C1</SelectItem>
-                    <SelectItem value="C2">C2</SelectItem>
-                    <SelectItem value="C3">C3</SelectItem>
+                    <SelectItem value="C1">C1 - Collaborateur niveau 1</SelectItem>
+                    <SelectItem value="C2">C2 - Collaborateur niveau 2</SelectItem>
+                    <SelectItem value="C3">C3 - Collaborateur niveau 3</SelectItem>
+                    <SelectItem value="CS1">CS1 - Chef de service niveau 1</SelectItem>
+                    <SelectItem value="CS2">CS2 - Chef de service niveau 2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

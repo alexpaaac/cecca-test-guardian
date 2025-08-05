@@ -21,7 +21,7 @@ export function CandidatesManager() {
     manager: '',
     managerEmail: '',
     department: '',
-    level: 'C1' as 'C1' | 'C2' | 'C3',
+    level: 'C1' as 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2',
     role: 'Candidat' as 'Candidat' | 'Chef de mission' | 'RH',
   });
   const [sendingEmails, setSendingEmails] = useState<Set<string>>(new Set());
@@ -316,9 +316,11 @@ export function CandidatesManager() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="C1">C1</SelectItem>
-                    <SelectItem value="C2">C2</SelectItem>
-                    <SelectItem value="C3">C3</SelectItem>
+                    <SelectItem value="C1">C1 - Collaborateur niveau 1</SelectItem>
+                    <SelectItem value="C2">C2 - Collaborateur niveau 2</SelectItem>
+                    <SelectItem value="C3">C3 - Collaborateur niveau 3</SelectItem>
+                    <SelectItem value="CS1">CS1 - Chef de service niveau 1</SelectItem>
+                    <SelectItem value="CS2">CS2 - Chef de service niveau 2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
