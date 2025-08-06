@@ -5,7 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminRoleSelection from "./pages/AdminRoleSelection";
+import AdminProtected from "./pages/AdminProtected";
 import TestInterface from "./pages/TestInterface";
 import NotFound from "./pages/NotFound";
 
@@ -19,7 +20,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="/admin/role-selection" element={<AdminRoleSelection />} />
+          <Route path="/admin/:role" element={<AdminProtected />} />
           <Route path="/test" element={<TestInterface />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

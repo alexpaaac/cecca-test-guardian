@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, Copy, RotateCcw, Target, Shuffle } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Copy, RotateCcw, Target, Shuffle, FileText } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Quiz, Question, QuizTemplate } from '@/types';
 
@@ -244,82 +244,128 @@ export function QuizManager() {
             </div>
 
             {!editingQuiz && (
-              <div className="space-y-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <Label className="text-base font-medium">Utiliser un modèle prédéfini</Label>
-                </div>
-                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Sélectionner un modèle..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          <span>
-                            {template.name} - {template.level}
-                            {template.level.startsWith('C') ? ' (Collaborateur)' : ' (Chef de service)'}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            ({template.questions.length} questions)
-                          </span>
+              <div className="space-y-4">
+                {/* Primary: Template Selection */}
+                <div className="space-y-4 p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border-2 border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-6 w-6 text-primary" />
+                    <Label className="text-lg font-semibold text-primary">Méthode recommandée : Utiliser un modèle</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Sélectionnez un modèle prédéfini pour créer rapidement un questionnaire optimisé.
+                  </p>
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                    <SelectTrigger className="rounded-xl h-12">
+                      <SelectValue placeholder="🎯 Choisir un modèle de questionnaire..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          <p>Aucun modèle disponible</p>
+                          <p className="text-xs">Créez d'abord des modèles dans l'onglet "Modèles"</p>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedTemplate && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shuffle className="h-4 w-4" />
-                    <span>
-                      Modèle contenant {templates.find(t => t.id === selectedTemplate)?.questions.length || 0} questions.
-                      {(templates.find(t => t.id === selectedTemplate)?.questions.length || 0) >= 40 
-                        ? " 20 questions seront sélectionnées aléatoirement."
-                        : " Toutes les questions seront incluses."
-                      }
-                    </span>
+                      ) : (
+                        templates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div className="flex items-center gap-3 py-1">
+                              <Target className="h-4 w-4 text-primary" />
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {template.name} - {template.level}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {template.questions.length} questions • 
+                                  {template.level.startsWith('C') ? ' Collaborateur' : ' Chef de service'}
+                                </span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplate && (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl">
+                      <Shuffle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700">
+                        Modèle sélectionné avec {templates.find(t => t.id === selectedTemplate)?.questions.length || 0} questions.
+                        {(templates.find(t => t.id === selectedTemplate)?.questions.length || 0) >= 40 
+                          ? " ✨ 20 questions seront sélectionnées aléatoirement pour optimiser le test."
+                          : " Toutes les questions seront incluses dans le questionnaire."
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Secondary: Manual Selection */}
+                {!selectedTemplate && (
+                  <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-muted">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-muted-foreground/50" />
+                      <Label className="text-base font-medium text-muted-foreground">Option avancée : Sélection manuelle</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Sélectionnez individuellement les questions (non recommandé - utilisez plutôt les modèles).
+                    </p>
                   </div>
                 )}
               </div>
             )}
 
-            <div>
-              <Label>Questions sélectionnées ({selectedQuestions.length}/{questions.length})</Label>
-              <div className="mt-2 max-h-64 overflow-y-auto space-y-2">
-                {questions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Aucune question disponible. Importez d'abord des questions.
-                  </p>
-                ) : (
-                  questions.map((question) => (
-                    <div key={question.id} className="flex items-start space-x-2 p-2 border rounded">
-                      <Checkbox
-                        id={`question-${question.id}`}
-                        checked={selectedQuestions.includes(question.id)}
-                        onCheckedChange={() => handleQuestionToggle(question.id)}
-                      />
-                      <div className="flex-1">
-                        <label
-                          htmlFor={`question-${question.id}`}
-                          className="text-sm font-medium cursor-pointer"
-                        >
-                          {question.question}
-                        </label>
-                        <ul className="text-xs text-muted-foreground mt-1">
-                          {question.choices.map((choice, index) => (
-                            <li key={index} className={index === question.correctAnswer ? 'text-green-600' : ''}>
-                              {index + 1}. {choice} {index === question.correctAnswer && '✓'}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+            {/* Questions Selection - Only show if no template selected or editing */}
+            {(!selectedTemplate || editingQuiz) && (
+              <div>
+                <Label>
+                  Questions sélectionnées ({selectedQuestions.length}
+                  {questions.length > 0 && `/${questions.length}`})
+                  {!selectedTemplate && !editingQuiz && (
+                    <span className="text-xs text-amber-600 ml-2">
+                      ⚠️ Sélection manuelle - Utilisez plutôt un modèle
+                    </span>
+                  )}
+                </Label>
+                <div className="mt-2 max-h-64 overflow-y-auto space-y-2">
+                  {questions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Aucune question disponible.</p>
+                      <p className="text-xs">Créez des questions dans l'onglet "Modèles" → "Banque de Questions".</p>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    questions.map((question) => (
+                      <div key={question.id} className="flex items-start space-x-2 p-3 border rounded-xl hover:bg-muted/50">
+                        <Checkbox
+                          id={`question-${question.id}`}
+                          checked={selectedQuestions.includes(question.id)}
+                          onCheckedChange={() => handleQuestionToggle(question.id)}
+                        />
+                        <div className="flex-1">
+                          <label
+                            htmlFor={`question-${question.id}`}
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            {question.question}
+                          </label>
+                          {question.category && (
+                            <span className="text-xs bg-muted px-2 py-1 rounded mt-1 inline-block">
+                              {question.category}
+                            </span>
+                          )}
+                          <ul className="text-xs text-muted-foreground mt-1">
+                            {question.choices.map((choice, index) => (
+                              <li key={index} className={index === question.correctAnswer ? 'text-green-600' : ''}>
+                                {index + 1}. {choice} {index === question.correctAnswer && '✓'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={resetForm}>

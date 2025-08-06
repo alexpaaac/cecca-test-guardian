@@ -18,7 +18,7 @@ export default function Home() {
             </div>
           </div>
           <Button
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/admin/role-selection')}
             variant="secondary"
             size="sm"
             className="rounded-xl"
