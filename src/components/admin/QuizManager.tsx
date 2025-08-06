@@ -24,6 +24,7 @@ export function QuizManager() {
   const [quizForm, setQuizForm] = useState({
     name: '',
     description: '',
+    hasClassificationGame: false,
   });
   const { toast } = useToast();
 
@@ -63,12 +64,13 @@ export function QuizManager() {
       accessCode: generateAccessCode(),
       status: 'active',
       timePerQuestion: 60,
+      hasClassificationGame: quizForm.hasClassificationGame,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     setQuizzes([...quizzes, newQuiz]);
-    setQuizForm({ name: '', description: '' });
+    setQuizForm({ name: '', description: '', hasClassificationGame: false });
     setSelectedQuestions([]);
     setIsCreating(false);
 
@@ -83,6 +85,7 @@ export function QuizManager() {
     setQuizForm({
       name: quiz.name,
       description: quiz.description,
+      hasClassificationGame: quiz.hasClassificationGame || false,
     });
     setSelectedQuestions(quiz.questions);
   };
@@ -95,12 +98,13 @@ export function QuizManager() {
       name: quizForm.name,
       description: quizForm.description,
       questions: selectedQuestions,
+      hasClassificationGame: quizForm.hasClassificationGame,
       updatedAt: new Date(),
     };
 
     setQuizzes(quizzes.map(q => q.id === editingQuiz.id ? updatedQuiz : q));
     setEditingQuiz(null);
-    setQuizForm({ name: '', description: '' });
+    setQuizForm({ name: '', description: '', hasClassificationGame: false });
     setSelectedQuestions([]);
 
     toast({
@@ -164,6 +168,7 @@ export function QuizManager() {
         setQuizForm({
           name: template.name,
           description: template.description,
+          hasClassificationGame: false,
         });
         
         // If template has 40 questions, select 20 random ones
@@ -183,7 +188,7 @@ export function QuizManager() {
   };
 
   const resetForm = () => {
-    setQuizForm({ name: '', description: '' });
+    setQuizForm({ name: '', description: '', hasClassificationGame: false });
     setSelectedQuestions([]);
     setSelectedTemplate('');
     setIsCreating(false);
@@ -241,6 +246,22 @@ export function QuizManager() {
                 onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
                 placeholder="Description du questionnaire..."
               />
+            </div>
+
+            <div className="space-y-3 p-4 bg-accent/5 rounded-xl border border-accent/10">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="classification-game"
+                  checked={quizForm.hasClassificationGame}
+                  onCheckedChange={(checked) => setQuizForm({ ...quizForm, hasClassificationGame: !!checked })}
+                />
+                <Label htmlFor="classification-game" className="text-sm font-medium">
+                  Inclure le jeu de classification comptable
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                Un jeu interactif de drag-and-drop sera proposé à la fin du questionnaire pour classer des termes comptables dans un bilan et un compte de résultat.
+              </p>
             </div>
 
             {!editingQuiz && (

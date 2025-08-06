@@ -187,6 +187,24 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
 
     const score = questions.length > 0 ? Math.round((correctAnswers / questions.length) * 100) : 0;
 
+    // Check if classification game is enabled
+    if (quiz.hasClassificationGame) {
+      const classificationSession = {
+        ...session,
+        status: 'classification_game' as const,
+        answers: finalAnswers,
+        score,
+        completionTime: totalTestTime,
+      };
+
+      setTestSessions(sessions => 
+        sessions.map(s => s.id === session.id ? classificationSession : s)
+      );
+
+      onComplete(classificationSession);
+      return;
+    }
+
     const completedSession = {
       ...session,
       status: 'completed' as const,

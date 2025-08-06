@@ -5,13 +5,14 @@ import { LoginForm } from '@/components/test/LoginForm';
 import { QuizInterface } from '@/components/test/QuizInterface';
 import { TestCancelled } from '@/components/test/TestCancelled';
 import { TestCompleted } from '@/components/test/TestCompleted';
+import ClassificationGame from '@/components/test/ClassificationGame';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Quiz, TestSession } from '@/types';
+import type { Quiz, TestSession, ClassificationGameResult } from '@/types';
 
 export default function TestInterface() {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [testSession, setTestSession] = useLocalStorage<TestSession | null>('currentTestSession', null);
-  const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled'>('login');
+  const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game'>('login');
 
   useEffect(() => {
     if (!testSession) {
@@ -20,6 +21,8 @@ export default function TestInterface() {
       setTestStatus('cancelled');
     } else if (testSession?.status === 'completed') {
       setTestStatus('completed');
+    } else if (testSession?.status === 'classification_game') {
+      setTestStatus('classification_game');
     } else if (testSession?.status === 'in_progress' && currentQuiz) {
       setTestStatus('in_progress');
     }
@@ -33,6 +36,29 @@ export default function TestInterface() {
 
   const handleTestComplete = (session: TestSession) => {
     setTestSession(session);
+    if (session.status === 'classification_game') {
+      setTestStatus('classification_game');
+    } else {
+      setTestStatus('completed');
+    }
+  };
+
+  const handleClassificationComplete = (result: ClassificationGameResult) => {
+    if (!testSession) return;
+    
+    const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
+    
+    const completedSession = {
+      ...testSession,
+      status: 'completed' as const,
+      classificationScore: result.score,
+      completedAt: new Date(),
+    };
+
+    setTestSession(completedSession);
+    setTestSessions(sessions => 
+      sessions.map(s => s.id === testSession.id ? completedSession : s)
+    );
     setTestStatus('completed');
   };
 
@@ -69,6 +95,10 @@ export default function TestInterface() {
           onComplete={handleTestComplete}
           onCancel={handleTestCancelled}
         />
+      )}
+      
+      {testStatus === 'classification_game' && (
+        <ClassificationGame onComplete={handleClassificationComplete} />
       )}
       
       {testStatus === 'completed' && mockCandidate && testSession && (

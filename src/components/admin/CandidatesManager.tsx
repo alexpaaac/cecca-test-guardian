@@ -415,29 +415,20 @@ export function CandidatesManager() {
                   </div>
 
                   <div className="flex gap-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Code quiz"
-                        className="w-32 h-8 text-xs rounded-lg"
-                        id={`quiz-code-${candidate.id}`}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const input = document.getElementById(`quiz-code-${candidate.id}`) as HTMLInputElement;
-                          handleSendEmail(candidate, input.value);
-                        }}
-                        disabled={sendingEmails.has(candidate.id)}
-                        className="rounded-lg h-8"
-                      >
-                        {sendingEmails.has(candidate.id) ? (
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Send className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Fonctionnalité à venir",
+                          description: "La sélection de modèle et l'envoi automatique seront bientôt disponibles.",
+                        });
+                      }}
+                      className="rounded-xl bg-primary hover:bg-primary/90"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Envoyer Test
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

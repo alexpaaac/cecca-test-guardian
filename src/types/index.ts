@@ -17,6 +17,7 @@ export interface Quiz {
   status: 'active' | 'inactive';
   timePerQuestion: number; // seconds
   role?: 'Candidat' | 'Chef de mission' | 'RH';
+  hasClassificationGame?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,12 +59,13 @@ export interface TestSession {
     level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
     role: 'Candidat' | 'Chef de mission' | 'RH';
   };
-  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game';
   startedAt?: Date;
   completedAt?: Date;
   completionTime?: number; // in seconds
   answers: number[];
   score?: number;
+  classificationScore?: number;
   cheatingAttempts: CheatingAttempt[];
 }
 
@@ -79,6 +81,19 @@ export interface TestResult {
   answers: number[];
   corrections: boolean[];
   score: number;
+}
+
+export interface ClassificationTerm {
+  id: string;
+  term: string;
+  correctCategory: 'bilan-actif' | 'bilan-passif' | 'resultat-produits' | 'resultat-charges';
+}
+
+export interface ClassificationGameResult {
+  terms: ClassificationTerm[];
+  playerAnswers: { [termId: string]: string };
+  score: number;
+  completedAt: Date;
 }
 
 export interface EmailLog {

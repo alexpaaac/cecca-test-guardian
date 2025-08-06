@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Plus, Trash2, Edit, Copy, Users, Target, Clock, Upload, FileText, Save, X } from 'lucide-react';
 import type { QuizTemplate, Question } from '@/types';
+import CSVPreview from './CSVPreview';
 
 export function QuizTemplateManager() {
   const [templates, setTemplates] = useLocalStorage<QuizTemplate[]>('quizTemplates', []);
@@ -348,6 +349,9 @@ export function QuizTemplateManager() {
                         onChange={(e) => setTemplateForm({ ...templateForm, timePerQuestion: parseInt(e.target.value) })}
                         className="rounded-xl"
                       />
+                      <div className="text-xs text-muted-foreground">
+                        ⏱️ Temps total estimé: <strong>{Math.round((selectedQuestions.length * templateForm.timePerQuestion) / 60)} minutes</strong>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
