@@ -19,7 +19,7 @@ export function EmployeesManager() {
     managerEmail: '',
     department: '',
     level: 'C1' as 'C1' | 'C2' | 'C3',
-    role: 'Candidat' as 'Candidat' | 'Chef de mission' | 'RH',
+    role: 'Collaborateur' as 'Collaborateur' | 'Chef de mission' | 'RH',
   });
   const { toast } = useToast();
 
@@ -65,7 +65,7 @@ export function EmployeesManager() {
       managerEmail: '',
       department: '',
       level: 'C1',
-      role: 'Candidat',
+      role: 'Collaborateur',
     });
 
     toast({

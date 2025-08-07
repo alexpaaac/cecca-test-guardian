@@ -34,6 +34,7 @@ export function QuizTemplateManager() {
     choices: ['', '', ''],
     correctAnswer: 0,
     category: '',
+    timePerQuestion: 60,
   });
   const { toast } = useToast();
 
@@ -176,22 +177,37 @@ export function QuizTemplateManager() {
         
         if (columns.length < 5) {
           toast({
-            title: "Erreur de format",
-            description: `Ligne ${i + 1}: Format attendu: question, choix1, choix2, choix3, réponse, [catégorie]`,
+            title: "❌ Erreur de format",
+            description: `Ligne ${i + 1}: Format attendu: question,choix1,choix2,choix3,réponse,[catégorie]`,
             variant: "destructive",
           });
+          setIsUploading(false);
           return;
         }
 
         const [question, choice1, choice2, choice3, correctAnswer, category] = columns;
-        const correctIndex = parseInt(correctAnswer) - 1;
-
-        if (correctIndex < 0 || correctIndex > 2) {
+        
+        // Validation des champs obligatoires
+        if (!question?.trim() || !choice1?.trim() || !choice2?.trim() || !choice3?.trim()) {
           toast({
-            title: "Erreur de réponse",
-            description: `Ligne ${i + 1}: La réponse doit être 1, 2 ou 3`,
+            title: "❌ Données manquantes",
+            description: `Ligne ${i + 1}: La question et les 3 choix sont obligatoires`,
             variant: "destructive",
           });
+          setIsUploading(false);
+          return;
+        }
+
+        // Détection automatique de la bonne réponse
+        const correctIndex = parseInt(correctAnswer?.trim()) - 1;
+
+        if (isNaN(correctIndex) || correctIndex < 0 || correctIndex > 2) {
+          toast({
+            title: "❌ Réponse invalide",
+            description: `Ligne ${i + 1}: La réponse doit être 1 (= ${choice1}), 2 (= ${choice2}) ou 3 (= ${choice3})`,
+            variant: "destructive",
+          });
+          setIsUploading(false);
           return;
         }
 
@@ -201,14 +217,15 @@ export function QuizTemplateManager() {
           choices: [choice1, choice2, choice3],
           correctAnswer: correctIndex,
           category: category || '',
+          timePerQuestion: 60, // default time per question
           createdAt: new Date(),
         });
       }
 
       setAllQuestions([...allQuestions, ...newQuestions]);
       toast({
-        title: "Import réussi",
-        description: `${newQuestions.length} questions importées avec succès.`,
+        title: "✅ Import réussi !",
+        description: `${newQuestions.length} questions importées avec détection automatique des bonnes réponses.`,
       });
     } catch (error) {
       toast({
@@ -238,6 +255,7 @@ export function QuizTemplateManager() {
       choices: questionForm.choices,
       correctAnswer: questionForm.correctAnswer,
       category: questionForm.category,
+      timePerQuestion: questionForm.timePerQuestion,
       createdAt: new Date(),
     };
 
@@ -257,6 +275,7 @@ export function QuizTemplateManager() {
       choices: ['', '', ''],
       correctAnswer: 0,
       category: '',
+      timePerQuestion: 60,
     });
   };
 
@@ -285,25 +304,6 @@ export function QuizTemplateManager() {
                 <p className="text-muted-foreground">
                   Créez des modèles prédéfinis pour différents rôles et niveaux. Chaque modèle peut contenir jusqu'à 40 questions.
                 </p>
-                <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <h4 className="font-medium text-accent-foreground mb-2">Modèles Collaborateurs</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li><strong>C1:</strong> Collaborateur niveau 1 - Connaissances de base</li>
-                        <li><strong>C2:</strong> Collaborateur niveau 2 - Connaissances intermédiaires</li>
-                        <li><strong>C3:</strong> Collaborateur niveau 3 - Connaissances avancées</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-accent-foreground mb-2">Modèles Chefs de Service</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li><strong>CS1:</strong> Chef de service niveau 1 - Management de base</li>
-                        <li><strong>CS2:</strong> Chef de service niveau 2 - Management avancé</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
               </div>
               <Button
                 onClick={() => setIsCreating(true)}
@@ -550,6 +550,9 @@ export function QuizTemplateManager() {
 
         <TabsContent value="questions" className="mt-6">
           <div className="space-y-6">
+            {/* CSV Preview */}
+            <CSVPreview />
+
             {/* CSV Import */}
             <Card className="rounded-2xl">
               <CardHeader>
@@ -558,7 +561,7 @@ export function QuizTemplateManager() {
                   Import des Questions (CSV)
                 </CardTitle>
                 <CardDescription>
-                  Importez vos questions au format CSV : question, choix1, choix2, choix3, réponse (1, 2 ou 3), catégorie (optionnel)
+                  Importez vos questions au format CSV. Le système détectera automatiquement les bonnes réponses depuis la colonne "réponse".
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -573,6 +576,9 @@ export function QuizTemplateManager() {
                       disabled={isUploading}
                       className="rounded-xl"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ✨ Les bonnes réponses seront automatiquement détectées : 1 = choix1, 2 = choix2, 3 = choix3
+                    </p>
                   </div>
                   {allQuestions.length > 0 && (
                     <div className="flex items-center justify-between">
@@ -675,6 +681,22 @@ export function QuizTemplateManager() {
                       placeholder="Ex: RH, Management, etc."
                       className="rounded-xl"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="questionTime">Temps alloué (secondes)</Label>
+                    <Input
+                      id="questionTime"
+                      type="number"
+                      min="30"
+                      max="300"
+                      value={questionForm.timePerQuestion}
+                      onChange={(e) => setQuestionForm({ ...questionForm, timePerQuestion: parseInt(e.target.value) || 60 })}
+                      className="rounded-xl"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Temps recommandé : 60-120 secondes par question
+                    </p>
                   </div>
 
                   <div className="flex justify-end space-x-2">

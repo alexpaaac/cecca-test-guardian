@@ -5,6 +5,7 @@ export interface Question {
   choices: string[];
   correctAnswer: number;
   category?: string;
+  timePerQuestion?: number; // seconds - optional custom time per question
   createdAt: Date;
 }
 
@@ -42,7 +43,7 @@ export interface Candidate {
   managerEmail: string;
   department: string;
   level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
-  role: 'Candidat' | 'Chef de mission' | 'RH';
+  role: 'Collaborateur' | 'Chef de mission' | 'RH';
   accessCode: string;
   createdAt: Date;
 }
@@ -57,7 +58,7 @@ export interface TestSession {
     manager: string;
     department: string;
     level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
-    role: 'Candidat' | 'Chef de mission' | 'RH';
+    role: 'Collaborateur' | 'Chef de mission' | 'RH';
   };
   status: 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game';
   startedAt?: Date;

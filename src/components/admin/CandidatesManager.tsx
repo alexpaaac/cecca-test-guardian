@@ -22,7 +22,7 @@ export function CandidatesManager() {
     managerEmail: '',
     department: '',
     level: 'C1' as 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2',
-    role: 'Candidat' as 'Candidat' | 'Chef de mission' | 'RH',
+    role: 'Collaborateur' as 'Collaborateur' | 'Chef de mission' | 'RH',
   });
   const [sendingEmails, setSendingEmails] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -192,7 +192,7 @@ export function CandidatesManager() {
       managerEmail: '',
       department: '',
       level: 'C1',
-      role: 'Candidat',
+      role: 'Collaborateur',
     });
   };
 
@@ -334,11 +334,11 @@ export function CandidatesManager() {
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Candidat">Candidat</SelectItem>
-                    <SelectItem value="Chef de mission">Chef de mission</SelectItem>
-                    <SelectItem value="RH">RH</SelectItem>
-                  </SelectContent>
+                          <SelectContent>
+                            <SelectItem value="Collaborateur">Collaborateur</SelectItem>
+                            <SelectItem value="Chef de mission">Chef de mission</SelectItem>
+                            <SelectItem value="RH">RH</SelectItem>
+                          </SelectContent>
                 </Select>
               </div>
             </div>
