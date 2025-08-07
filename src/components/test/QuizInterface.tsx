@@ -31,9 +31,10 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   // Get questions for this quiz
   const questions = allQuestions.filter(q => quiz.questions.includes(q.id));
   
-  // Initialize timer with current question's specific time or quiz default
+  // Initialize timer with current question's specific time (prioritize question-level config)
   const getCurrentQuestionTime = () => {
     const currentQ = questions[currentQuestionIndex];
+    // Prioritize question-level timePerQuestion over quiz-level
     return currentQ?.timePerQuestion || quiz.timePerQuestion || 60;
   };
   
@@ -62,28 +63,37 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     setTimeLeft(getCurrentQuestionTime());
   }, [currentQuestionIndex, questions]);
 
-  // Anti-cheat system
+  // Enhanced anti-cheat system
+  const logCheatingAttempt = useCallback((type: 'tab_switch' | 'window_blur' | 'focus_lost' | 'right_click' | 'dev_tools', metadata?: any) => {
+    const attempt = {
+      type,
+      timestamp: new Date(),
+      warning: type === 'tab_switch' ? !hasWarning : true,
+      metadata
+    };
+
+    const updatedSession = {
+      ...session,
+      cheatingAttempts: [...session.cheatingAttempts, attempt],
+    };
+
+    setTestSessions(sessions => 
+      sessions.map(s => s.id === session.id ? updatedSession : s)
+    );
+
+    return updatedSession;
+  }, [session, setTestSessions, hasWarning]);
+
   const handleVisibilityChange = useCallback(() => {
     if (document.hidden) {
-      const attempt = {
-        type: 'tab_switch' as const,
-        timestamp: new Date(),
-        warning: !hasWarning,
-      };
-
-      const updatedSession = {
-        ...session,
-        cheatingAttempts: [...session.cheatingAttempts, attempt],
-      };
+      const updatedSession = logCheatingAttempt('tab_switch', { 
+        questionIndex: currentQuestionIndex,
+        timeLeft 
+      });
 
       if (!hasWarning) {
         setHasWarning(true);
         setShowWarning(true);
-        
-        // Update session in localStorage
-        setTestSessions(sessions => 
-          sessions.map(s => s.id === session.id ? updatedSession : s)
-        );
         
         toast({
           title: "⚠️ Avertissement",
@@ -91,7 +101,7 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
           variant: "destructive",
         });
       } else {
-        // Second offense - cancel test
+        // Second tab switch offense - cancel test
         const cancelledSession = {
           ...updatedSession,
           status: 'cancelled' as const,
@@ -106,42 +116,57 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
         onCancel(cancelledSession);
       }
     }
-  }, [hasWarning, session, setTestSessions, onCancel, toast]);
+  }, [logCheatingAttempt, hasWarning, currentQuestionIndex, timeLeft, toast, onCancel, totalTestTime, setTestSessions]);
 
   const handleWindowBlur = useCallback(() => {
-    const attempt = {
-      type: 'window_blur' as const,
-      timestamp: new Date(),
-      warning: true,
-    };
+    logCheatingAttempt('window_blur', { 
+      questionIndex: currentQuestionIndex,
+      timeLeft 
+    });
+  }, [logCheatingAttempt, currentQuestionIndex, timeLeft]);
 
-    const updatedSession = {
-      ...session,
-      cheatingAttempts: [...session.cheatingAttempts, attempt],
-    };
-
-    setTestSessions(sessions => 
-      sessions.map(s => s.id === session.id ? updatedSession : s)
-    );
-  }, [session, setTestSessions]);
+  const handleFocusLost = useCallback(() => {
+    logCheatingAttempt('focus_lost', { 
+      questionIndex: currentQuestionIndex,
+      timeLeft 
+    });
+  }, [logCheatingAttempt, currentQuestionIndex, timeLeft]);
 
   useEffect(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleFocusLost);
 
-    // Prevent right-click context menu
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+    // Enhanced anti-cheat: prevent right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      logCheatingAttempt('right_click', { 
+        questionIndex: currentQuestionIndex,
+        target: (e.target as Element)?.tagName 
+      });
+    };
     document.addEventListener('contextmenu', handleContextMenu);
 
-    // Prevent F12, Ctrl+Shift+I, etc.
+    // Enhanced anti-cheat: prevent dev tools shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
+      const isDeveloperTool = 
         e.key === 'F12' ||
         (e.ctrlKey && e.shiftKey && e.key === 'I') ||
         (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-        (e.ctrlKey && e.key === 'u')
-      ) {
+        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.key === 'u') ||
+        (e.metaKey && e.altKey && e.key === 'I') || // Mac Safari
+        (e.metaKey && e.altKey && e.key === 'C'); // Mac Chrome
+
+      if (isDeveloperTool) {
         e.preventDefault();
+        logCheatingAttempt('dev_tools', { 
+          key: e.key,
+          ctrl: e.ctrlKey,
+          shift: e.shiftKey,
+          meta: e.metaKey,
+          questionIndex: currentQuestionIndex 
+        });
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -149,10 +174,11 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleFocusLost);
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleVisibilityChange, handleWindowBlur]);
+  }, [handleVisibilityChange, handleWindowBlur, handleFocusLost, logCheatingAttempt, currentQuestionIndex]);
 
   const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);

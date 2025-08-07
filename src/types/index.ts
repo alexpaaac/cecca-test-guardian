@@ -71,9 +71,10 @@ export interface TestSession {
 }
 
 export interface CheatingAttempt {
-  type: 'tab_switch' | 'window_blur';
+  type: 'tab_switch' | 'window_blur' | 'focus_lost' | 'right_click' | 'dev_tools';
   timestamp: Date;
   warning: boolean;
+  metadata?: any;
 }
 
 export interface TestResult {
