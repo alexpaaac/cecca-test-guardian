@@ -166,6 +166,11 @@ export function QuizTemplateManager() {
     }, 0);
   };
 
+  const getAverageQuestionTime = () => {
+    if (selectedQuestions.length === 0) return templateForm.timePerQuestion;
+    return Math.round(getTotalEstimatedTime() / selectedQuestions.length);
+  };
+
   const resetForm = () => {
     setTemplateForm({
       name: '',
@@ -474,8 +479,11 @@ export function QuizTemplateManager() {
                         onChange={(e) => setTemplateForm({ ...templateForm, timePerQuestion: parseInt(e.target.value) })}
                         className="rounded-xl"
                       />
-                      <div className="text-xs text-muted-foreground">
-                        ⏱️ Temps total estimé: <strong>{Math.round(getTotalEstimatedTime() / 60)} minutes</strong>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>⏱️ Temps total estimé: <strong>{Math.round(getTotalEstimatedTime() / 60)} min {getTotalEstimatedTime() % 60} sec</strong></div>
+                        {selectedQuestions.length > 0 && (
+                          <div>📊 Temps moyen par question: <strong>{getAverageQuestionTime()} secondes</strong></div>
+                        )}
                       </div>
                     </div>
 
