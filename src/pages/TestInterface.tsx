@@ -14,16 +14,26 @@ export default function TestInterface() {
   const [testSession, setTestSession] = useLocalStorage<TestSession | null>('currentTestSession', null);
   const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game'>('login');
 
+  // Debug logs
+  console.log('TestInterface - testSession:', testSession);
+  console.log('TestInterface - testStatus:', testStatus);
+  console.log('TestInterface - currentQuiz:', currentQuiz);
+
   useEffect(() => {
     if (!testSession) {
+      console.log('Setting testStatus to login - no testSession');
       setTestStatus('login');
     } else if (testSession?.status === 'cancelled') {
+      console.log('Setting testStatus to cancelled');
       setTestStatus('cancelled');
     } else if (testSession?.status === 'completed') {
+      console.log('Setting testStatus to completed');
       setTestStatus('completed');
     } else if (testSession?.status === 'classification_game') {
+      console.log('Setting testStatus to classification_game');
       setTestStatus('classification_game');
     } else if (testSession?.status === 'in_progress' && currentQuiz) {
+      console.log('Setting testStatus to in_progress');
       setTestStatus('in_progress');
     }
   }, [testSession, currentQuiz]);
@@ -82,34 +92,51 @@ export default function TestInterface() {
     createdAt: new Date(),
   } : null;
 
+  console.log('TestInterface render - testStatus:', testStatus);
+
   return (
     <Layout title="Test RH Collaborateur">
       {testStatus === 'login' && (
-        <LoginForm onLogin={handleLogin} />
+        <>
+          {console.log('Rendering LoginForm')}
+          <LoginForm onLogin={handleLogin} />
+        </>
       )}
       
       {testStatus === 'in_progress' && currentQuiz && testSession && (
-        <QuizInterface 
-          quiz={currentQuiz}
-          session={testSession}
-          onComplete={handleTestComplete}
-          onCancel={handleTestCancelled}
-        />
+        <>
+          {console.log('Rendering QuizInterface')}
+          <QuizInterface 
+            quiz={currentQuiz}
+            session={testSession}
+            onComplete={handleTestComplete}
+            onCancel={handleTestCancelled}
+          />
+        </>
       )}
       
       {testStatus === 'classification_game' && (
-        <ClassificationGame onComplete={handleClassificationComplete} />
+        <>
+          {console.log('Rendering ClassificationGame')}
+          <ClassificationGame onComplete={handleClassificationComplete} />
+        </>
       )}
       
       {testStatus === 'completed' && mockCandidate && testSession && (
-        <TestCompleted 
-          candidate={mockCandidate}
-          session={testSession}
-        />
+        <>
+          {console.log('Rendering TestCompleted')}
+          <TestCompleted 
+            candidate={mockCandidate}
+            session={testSession}
+          />
+        </>
       )}
       
       {testStatus === 'cancelled' && (
-        <TestCancelled />
+        <>
+          {console.log('Rendering TestCancelled')}
+          <TestCancelled />
+        </>
       )}
     </Layout>
   );
