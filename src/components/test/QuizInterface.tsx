@@ -26,18 +26,19 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasWarning, setHasWarning] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const { toast } = useToast();
+
+  // Get questions for this quiz
+  const questions = allQuestions.filter(q => quiz.questions.includes(q.id));
+  
   // Initialize timer with current question's specific time or quiz default
   const getCurrentQuestionTime = () => {
     const currentQ = questions[currentQuestionIndex];
     return currentQ?.timePerQuestion || quiz.timePerQuestion || 60;
   };
   
-  const [timeLeft, setTimeLeft] = useState(getCurrentQuestionTime());
+  const [timeLeft, setTimeLeft] = useState(() => getCurrentQuestionTime());
   const [totalTestTime, setTotalTestTime] = useState(0);
-  const { toast } = useToast();
-
-  // Get questions for this quiz
-  const questions = allQuestions.filter(q => quiz.questions.includes(q.id));
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
