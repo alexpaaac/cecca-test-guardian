@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Plus, Trash2, Edit, Copy, Users, Target, Clock, Upload, FileText, Save, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import type { QuizTemplate, Question } from '@/types';
 import CSVPreview from './CSVPreview';
 
@@ -156,136 +157,166 @@ export function QuizTemplateManager() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier CSV.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsUploading(true);
     
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      const newQuestions: Question[] = [];
-
-      // Detect CSV format from first line (header)
-      const firstLine = lines[0];
-      const headers = firstLine.split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
-      const isNewFormat = headers.includes('bonne_reponse');
-      const isOldFormat = headers.includes('réponse') || headers.includes('reponse');
-      
-      // Skip header line if it contains column names
-      const startIndex = (headers.includes('question') && (isNewFormat || isOldFormat)) ? 1 : 0;
-
-      for (let i = startIndex; i < lines.length; i++) {
-        // Parse CSV properly handling quoted values
-        const csvLine = lines[i];
-        const columns = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let j = 0; j < csvLine.length; j++) {
-          const char = csvLine[j];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            columns.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        columns.push(current.trim());
-        
-        if (columns.length < 5) {
-          toast({
-            title: "❌ Erreur de format",
-            description: `Ligne ${i + 1}: Format attendu: question,choix1,choix2,choix3,bonne_reponse/réponse,[catégorie],[temps]`,
-            variant: "destructive",
-          });
-          setIsUploading(false);
-          return;
-        }
-
-        const [question, choice1, choice2, choice3, correctAnswerField, category, timeField] = columns;
-        
-        // Validation des champs obligatoires
-        if (!question?.trim() || !choice1?.trim() || !choice2?.trim() || !choice3?.trim()) {
-          toast({
-            title: "❌ Données manquantes",
-            description: `Ligne ${i + 1}: La question et les 3 choix sont obligatoires`,
-            variant: "destructive",
-          });
-          setIsUploading(false);
-          return;
-        }
-
-        let correctIndex = -1;
-
-        // Detect correct answer format and parse accordingly
-        if (isNewFormat || correctAnswerField?.trim().toLowerCase().startsWith('choix')) {
-          // New format: "choix1", "choix2", "choix3"
-          const choiceMatch = correctAnswerField?.trim().toLowerCase();
-          if (choiceMatch === 'choix1') correctIndex = 0;
-          else if (choiceMatch === 'choix2') correctIndex = 1;
-          else if (choiceMatch === 'choix3') correctIndex = 2;
-          else {
-            toast({
-              title: "❌ Réponse invalide",
-              description: `Ligne ${i + 1}: La bonne réponse doit être "choix1", "choix2" ou "choix3"`,
-              variant: "destructive",
-            });
-            setIsUploading(false);
-            return;
-          }
-        } else {
-          // Old format: 1, 2, 3
-          correctIndex = parseInt(correctAnswerField?.trim()) - 1;
-          if (isNaN(correctIndex) || correctIndex < 0 || correctIndex > 2) {
-            toast({
-              title: "❌ Réponse invalide",
-              description: `Ligne ${i + 1}: La réponse doit être 1 (= ${choice1}), 2 (= ${choice2}) ou 3 (= ${choice3})`,
-              variant: "destructive",
-            });
-            setIsUploading(false);
-            return;
-          }
-        }
-
-        // Parse custom time per question if provided
-        const timePerQuestion = timeField ? parseInt(timeField.trim()) : 60;
-
-        newQuestions.push({
-          id: crypto.randomUUID(),
-          question,
-          choices: [choice1, choice2, choice3],
-          correctAnswer: correctIndex,
-          category: category?.trim() || '',
-          timePerQuestion: (!isNaN(timePerQuestion) && timePerQuestion > 0) ? timePerQuestion : 60,
-          createdAt: new Date(),
-        });
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Taille de fichier trop importante. Maximum autorisé : 5 MB');
       }
 
-      setAllQuestions([...allQuestions, ...newQuestions]);
+      // Check file format
+      const fileExtension = file.name.toLowerCase().split('.').pop();
+      const supportedFormats = ['csv', 'xlsx', 'xls', 'numbers'];
       
-      const formatDetected = isNewFormat ? 'nouveau format (bonne_reponse)' : 'format classique (réponse numérique)';
+      if (!fileExtension || !supportedFormats.includes(fileExtension)) {
+        throw new Error(`Format de fichier non supporté. Formats acceptés : ${supportedFormats.join(', ')}`);
+      }
+
+      let worksheet: any;
+      
+      // Parse different file formats
+      if (fileExtension === 'csv') {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          throw new Error('Le fichier doit contenir au moins une ligne d\'en-têtes et une ligne de données');
+        }
+
+        // Convert CSV to worksheet format for uniform processing
+        const data = lines.map(line => {
+          const values: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim().replace(/"/g, ''));
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/"/g, ''));
+          return values;
+        });
+        
+        worksheet = XLSX.utils.aoa_to_sheet(data);
+      } else {
+        // Handle Excel/Numbers files
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      }
+
+      // Convert worksheet to array of arrays
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+      
+      if (data.length < 2) {
+        throw new Error('Le fichier doit contenir au moins une ligne d\'en-têtes et une ligne de données');
+      }
+
+      // Strict header validation
+      const headers = data[0].map(h => String(h || '').trim().toLowerCase());
+      const requiredHeaders = ['question', 'choix1', 'choix2', 'choix3', 'bonne_reponse'];
+      const optionalHeaders = ['catégorie', 'categorie', 'category', 'temps', 'time'];
+      
+      // Check for exact required headers
+      const headerMapping: { [key: string]: number } = {};
+      requiredHeaders.forEach(required => {
+        const index = headers.findIndex(h => h === required || (required === 'bonne_reponse' && (h === 'bonne réponse' || h === 'bonne_réponse')));
+        if (index === -1) {
+          throw new Error(`Structure incorrecte. Colonne manquante : "${required}". Colonnes requises : ${requiredHeaders.join(', ')}`);
+        }
+        headerMapping[required] = index;
+      });
+      
+      // Map optional headers
+      optionalHeaders.forEach(optional => {
+        const index = headers.findIndex(h => h === optional);
+        if (index !== -1) {
+          if (optional.includes('catég') || optional === 'category') {
+            headerMapping['category'] = index;
+          } else if (optional === 'temps' || optional === 'time') {
+            headerMapping['time'] = index;
+          }
+        }
+      });
+
+      const importedQuestions: Question[] = [];
+      
+      // Process data rows
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row || row.every(cell => !cell || String(cell).trim() === '')) continue;
+
+        const questionText = String(row[headerMapping.question] || '').trim();
+        const choice1 = String(row[headerMapping.choix1] || '').trim();
+        const choice2 = String(row[headerMapping.choix2] || '').trim();
+        const choice3 = String(row[headerMapping.choix3] || '').trim();
+        const correctAnswerValue = String(row[headerMapping.bonne_reponse] || '').trim();
+
+        // Validate required fields
+        if (!questionText || !choice1 || !choice2 || !choice3 || !correctAnswerValue) {
+          throw new Error(`Ligne ${i + 1}: Tous les champs obligatoires doivent être remplis (question, choix1, choix2, choix3, bonne_reponse)`);
+        }
+
+        // Strict validation for bonne_reponse
+        let correctAnswer: number;
+        if (correctAnswerValue === 'choix1') correctAnswer = 0;
+        else if (correctAnswerValue === 'choix2') correctAnswer = 1;
+        else if (correctAnswerValue === 'choix3') correctAnswer = 2;
+        else {
+          throw new Error(`Ligne ${i + 1}: "bonne_reponse" doit être exactement "choix1", "choix2" ou "choix3". Valeur trouvée: "${correctAnswerValue}"`);
+        }
+
+        const category = headerMapping.category !== undefined ? String(row[headerMapping.category] || '').trim() || undefined : undefined;
+        const timePerQuestion = headerMapping.time !== undefined ? 
+          parseInt(String(row[headerMapping.time] || '60')) || 60 : 60;
+
+        const question: Question = {
+          id: crypto.randomUUID(),
+          question: questionText,
+          choices: [choice1, choice2, choice3],
+          correctAnswer,
+          category,
+          timePerQuestion,
+          createdAt: new Date(),
+        };
+
+        importedQuestions.push(question);
+      }
+
+      if (importedQuestions.length === 0) {
+        throw new Error('Aucune question valide trouvée dans le fichier');
+      }
+
+      if (importedQuestions.length > 100) {
+        throw new Error(`Maximum 100 questions par import. Votre fichier contient ${importedQuestions.length} questions.`);
+      }
+
+      setAllQuestions([...allQuestions, ...importedQuestions]);
       toast({
         title: "✅ Import réussi !",
-        description: `${newQuestions.length} questions importées - ${formatDetected} détecté automatiquement.`,
+        description: `${importedQuestions.length} question(s) importée(s) avec succès`,
       });
+      
+      // Reset file input
+      event.target.value = '';
+      
     } catch (error) {
+      console.error('Erreur lors de l\'import:', error);
       toast({
         title: "Erreur d'import",
-        description: "Impossible de lire le fichier CSV. Vérifiez le format et l'encodage UTF-8.",
+        description: error instanceof Error ? error.message : 'Erreur lors de l\'import du fichier',
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
-      event.target.value = '';
     }
   };
 
@@ -608,26 +639,26 @@ export function QuizTemplateManager() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
-                  Import des Questions (CSV)
+                  Import des Questions
                 </CardTitle>
                 <CardDescription>
-                  Importez vos questions au format CSV. Le système détectera automatiquement les bonnes réponses depuis la colonne "réponse".
+                  Importez vos questions depuis un fichier CSV, Excel ou Numbers avec la structure obligatoire : question,choix1,choix2,choix3,bonne_reponse
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="csv-upload">Fichier CSV</Label>
+                    <Label htmlFor="csv-upload">Fichier de questions</Label>
                     <Input
                       id="csv-upload"
                       type="file"
-                      accept=".csv"
+                      accept=".csv,.xlsx,.xls,.numbers"
                       onChange={handleFileUpload}
                       disabled={isUploading}
                       className="rounded-xl"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      ✨ Les bonnes réponses seront automatiquement détectées : 1 = choix1, 2 = choix2, 3 = choix3
+                      Formats supportés : CSV, Excel (.xlsx, .xls), Numbers - Structure obligatoire avec "bonne_reponse" = "choix1", "choix2" ou "choix3"
                     </p>
                   </div>
                   {allQuestions.length > 0 && (
