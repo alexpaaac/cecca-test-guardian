@@ -50,6 +50,38 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
 
+  const handleNext = useCallback((autoAdvance = false) => {
+    if (!autoAdvance && selectedAnswer === null) {
+      toast({
+        title: "Réponse requise",
+        description: "Veuillez sélectionner une réponse avant de continuer.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newAnswers = [...answers];
+    newAnswers[currentQuestionIndex] = selectedAnswer ?? -1; // -1 for no answer
+    setAnswers(newAnswers);
+
+    // Update session in localStorage
+    const updatedSession = {
+      ...session,
+      answers: newAnswers,
+    };
+    
+    setTestSessions(sessions => 
+      sessions.map(s => s.id === session.id ? updatedSession : s)
+    );
+
+    if (isLastQuestion) {
+      handleSubmitTest(newAnswers);
+    } else {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer(newAnswers[currentQuestionIndex + 1] ?? null);
+    }
+  }, [selectedAnswer, answers, currentQuestionIndex, isLastQuestion, session, setTestSessions, toast]);
+
   // Timer for individual questions
   useEffect(() => {
     if (timeLeft > 0) {
@@ -62,7 +94,7 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
       // Auto-advance when time expires
       handleNext(true);
     }
-  }, [timeLeft]);
+  }, [timeLeft, handleNext]);
 
   // Reset timer when question changes - use question-specific time
   useEffect(() => {
@@ -190,37 +222,6 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     setSelectedAnswer(answerIndex);
   };
 
-  const handleNext = (autoAdvance = false) => {
-    if (!autoAdvance && selectedAnswer === null) {
-      toast({
-        title: "Réponse requise",
-        description: "Veuillez sélectionner une réponse avant de continuer.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newAnswers = [...answers];
-    newAnswers[currentQuestionIndex] = selectedAnswer ?? -1; // -1 for no answer
-    setAnswers(newAnswers);
-
-    // Update session in localStorage
-    const updatedSession = {
-      ...session,
-      answers: newAnswers,
-    };
-    
-    setTestSessions(sessions => 
-      sessions.map(s => s.id === session.id ? updatedSession : s)
-    );
-
-    if (isLastQuestion) {
-      handleSubmitTest(newAnswers);
-    } else {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(newAnswers[currentQuestionIndex + 1] ?? null);
-    }
-  };
 
   const handleSubmitTest = async (finalAnswers: number[]) => {
     // Calculate score

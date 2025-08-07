@@ -10,6 +10,7 @@ import { QuizManager } from '@/components/admin/QuizManager';
 import { QuizTemplateManager } from '@/components/admin/QuizTemplateManager';
 import { CandidatesManager } from '@/components/admin/CandidatesManager';
 import { ResultsDashboard } from '@/components/admin/ResultsDashboard';
+import { ClassificationResults } from '@/components/admin/ClassificationResults';
 import { SessionLogs } from '@/components/admin/SessionLogs';
 import { Shield, User, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -22,9 +23,9 @@ export default function AdminDashboard() {
 
   const getAvailableTabs = (role: AdminRole) => {
     if (role === 'Administrator') {
-      return ['questions', 'templates', 'quizzes', 'candidates', 'results', 'logs'];
+      return ['questions', 'templates', 'quizzes', 'candidates', 'results', 'classification', 'logs'];
     } else {
-      return ['results']; // Manager can only view results
+      return ['results', 'classification']; // Manager can view results and classification
     }
   };
 
@@ -94,12 +95,13 @@ export default function AdminDashboard() {
           </Card>
         ) : (
           <Tabs defaultValue="questions" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="questions">Questions</TabsTrigger>
               <TabsTrigger value="templates">Modèles</TabsTrigger>
               <TabsTrigger value="quizzes">Questionnaires</TabsTrigger>
               <TabsTrigger value="candidates">Candidats</TabsTrigger>
               <TabsTrigger value="results">Résultats</TabsTrigger>
+              <TabsTrigger value="classification">Classification</TabsTrigger>
               <TabsTrigger value="logs">Journal</TabsTrigger>
             </TabsList>
             
@@ -121,6 +123,10 @@ export default function AdminDashboard() {
             
             <TabsContent value="results" className="mt-6">
               <ResultsDashboard isManagerView={false} />
+            </TabsContent>
+            
+            <TabsContent value="classification" className="mt-6">
+              <ClassificationResults />
             </TabsContent>
             
             <TabsContent value="logs" className="mt-6">
