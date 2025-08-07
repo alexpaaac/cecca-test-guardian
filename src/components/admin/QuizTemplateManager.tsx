@@ -172,20 +172,46 @@ export function QuizTemplateManager() {
       const lines = text.split('\n').filter(line => line.trim());
       const newQuestions: Question[] = [];
 
-      for (let i = 0; i < lines.length; i++) {
-        const columns = lines[i].split(',').map(col => col.trim().replace(/"/g, ''));
+      // Detect CSV format from first line (header)
+      const firstLine = lines[0];
+      const headers = firstLine.split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+      const isNewFormat = headers.includes('bonne_reponse');
+      const isOldFormat = headers.includes('réponse') || headers.includes('reponse');
+      
+      // Skip header line if it contains column names
+      const startIndex = (headers.includes('question') && (isNewFormat || isOldFormat)) ? 1 : 0;
+
+      for (let i = startIndex; i < lines.length; i++) {
+        // Parse CSV properly handling quoted values
+        const csvLine = lines[i];
+        const columns = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let j = 0; j < csvLine.length; j++) {
+          const char = csvLine[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            columns.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        columns.push(current.trim());
         
         if (columns.length < 5) {
           toast({
             title: "❌ Erreur de format",
-            description: `Ligne ${i + 1}: Format attendu: question,choix1,choix2,choix3,réponse,[catégorie]`,
+            description: `Ligne ${i + 1}: Format attendu: question,choix1,choix2,choix3,bonne_reponse/réponse,[catégorie],[temps]`,
             variant: "destructive",
           });
           setIsUploading(false);
           return;
         }
 
-        const [question, choice1, choice2, choice3, correctAnswer, category] = columns;
+        const [question, choice1, choice2, choice3, correctAnswerField, category, timeField] = columns;
         
         // Validation des champs obligatoires
         if (!question?.trim() || !choice1?.trim() || !choice2?.trim() || !choice3?.trim()) {
@@ -198,39 +224,63 @@ export function QuizTemplateManager() {
           return;
         }
 
-        // Détection automatique de la bonne réponse
-        const correctIndex = parseInt(correctAnswer?.trim()) - 1;
+        let correctIndex = -1;
 
-        if (isNaN(correctIndex) || correctIndex < 0 || correctIndex > 2) {
-          toast({
-            title: "❌ Réponse invalide",
-            description: `Ligne ${i + 1}: La réponse doit être 1 (= ${choice1}), 2 (= ${choice2}) ou 3 (= ${choice3})`,
-            variant: "destructive",
-          });
-          setIsUploading(false);
-          return;
+        // Detect correct answer format and parse accordingly
+        if (isNewFormat || correctAnswerField?.trim().toLowerCase().startsWith('choix')) {
+          // New format: "choix1", "choix2", "choix3"
+          const choiceMatch = correctAnswerField?.trim().toLowerCase();
+          if (choiceMatch === 'choix1') correctIndex = 0;
+          else if (choiceMatch === 'choix2') correctIndex = 1;
+          else if (choiceMatch === 'choix3') correctIndex = 2;
+          else {
+            toast({
+              title: "❌ Réponse invalide",
+              description: `Ligne ${i + 1}: La bonne réponse doit être "choix1", "choix2" ou "choix3"`,
+              variant: "destructive",
+            });
+            setIsUploading(false);
+            return;
+          }
+        } else {
+          // Old format: 1, 2, 3
+          correctIndex = parseInt(correctAnswerField?.trim()) - 1;
+          if (isNaN(correctIndex) || correctIndex < 0 || correctIndex > 2) {
+            toast({
+              title: "❌ Réponse invalide",
+              description: `Ligne ${i + 1}: La réponse doit être 1 (= ${choice1}), 2 (= ${choice2}) ou 3 (= ${choice3})`,
+              variant: "destructive",
+            });
+            setIsUploading(false);
+            return;
+          }
         }
+
+        // Parse custom time per question if provided
+        const timePerQuestion = timeField ? parseInt(timeField.trim()) : 60;
 
         newQuestions.push({
           id: crypto.randomUUID(),
           question,
           choices: [choice1, choice2, choice3],
           correctAnswer: correctIndex,
-          category: category || '',
-          timePerQuestion: 60, // default time per question
+          category: category?.trim() || '',
+          timePerQuestion: (!isNaN(timePerQuestion) && timePerQuestion > 0) ? timePerQuestion : 60,
           createdAt: new Date(),
         });
       }
 
       setAllQuestions([...allQuestions, ...newQuestions]);
+      
+      const formatDetected = isNewFormat ? 'nouveau format (bonne_reponse)' : 'format classique (réponse numérique)';
       toast({
         title: "✅ Import réussi !",
-        description: `${newQuestions.length} questions importées avec détection automatique des bonnes réponses.`,
+        description: `${newQuestions.length} questions importées - ${formatDetected} détecté automatiquement.`,
       });
     } catch (error) {
       toast({
         title: "Erreur d'import",
-        description: "Impossible de lire le fichier CSV.",
+        description: "Impossible de lire le fichier CSV. Vérifiez le format et l'encodage UTF-8.",
         variant: "destructive",
       });
     } finally {

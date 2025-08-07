@@ -5,10 +5,10 @@ import { FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function CSVPreview() {
-  const sampleCSV = `question,choix1,choix2,choix3,réponse,catégorie
-"Quel est le principe comptable fondamental ?","Image fidèle","Prudence","Continuité d'exploitation",1,"Principes comptables"
-"Que représente l'actif du bilan ?","Les dettes","Les biens et créances","Le capital",2,"Bilan"
-"Comment calcule-t-on le résultat net ?","Produits - Charges","Actif - Passif","Capital + Réserves",1,"Compte de résultat"`;
+  const sampleCSV = `question,choix1,choix2,choix3,bonne_reponse,catégorie
+"Quel est le traitement TVA pour l'achat de fournitures 300€ HT avec TVA 20% payé en espèces ?","TVA récupérable","TVA non récupérable","TVA à proratiser","choix1","TVA"
+"Quelle est la bonne période pour comptabiliser une facture fournisseur reçue en septembre mais datant de juillet ?","Septembre","Juillet","Octobre","choix1","Comptabilisation"
+"Dans un bilan, où classe-t-on les dotations aux amortissements ?","Actif","Passif","Compte de résultat","choix3","Bilan"`;
 
   const downloadSample = () => {
     const blob = new Blob([sampleCSV], { type: 'text/csv;charset=utf-8' });
@@ -33,10 +33,21 @@ export default function CSVPreview() {
       <CardContent className="space-y-4">
         <Alert>
           <AlertDescription>
-            <strong>Format requis :</strong> Le fichier CSV doit contenir exactement ces colonnes dans cet ordre :
-            <code className="block mt-2 p-2 bg-muted rounded text-sm">
-              question,choix1,choix2,choix3,réponse,catégorie
-            </code>
+            <strong>Formats supportés :</strong> Le fichier CSV peut utiliser l'un de ces formats :
+            <div className="space-y-2 mt-2">
+              <div>
+                <strong>Format recommandé :</strong>
+                <code className="block mt-1 p-2 bg-muted rounded text-sm">
+                  question,choix1,choix2,choix3,bonne_reponse,catégorie
+                </code>
+              </div>
+              <div>
+                <strong>Format alternatif :</strong>
+                <code className="block mt-1 p-2 bg-muted rounded text-sm">
+                  question,choix1,choix2,choix3,réponse,catégorie
+                </code>
+              </div>
+            </div>
           </AlertDescription>
         </Alert>
 
@@ -53,8 +64,10 @@ export default function CSVPreview() {
             <ul className="list-disc list-inside space-y-1 mt-2 text-muted-foreground">
               <li><strong>question :</strong> Le texte de la question (entre guillemets si elle contient des virgules)</li>
               <li><strong>choix1, choix2, choix3 :</strong> Les trois options de réponse</li>
-              <li><strong>réponse :</strong> Le numéro de la bonne réponse (1, 2 ou 3)</li>
+              <li><strong>bonne_reponse :</strong> Le texte exact du bon choix ("choix1", "choix2" ou "choix3")</li>
+              <li><strong>réponse :</strong> Alternative - Le numéro de la bonne réponse (1, 2 ou 3)</li>
               <li><strong>catégorie :</strong> La catégorie de la question (optionnel)</li>
+              <li><strong>temps :</strong> Temps par question en secondes (optionnel, défaut: 60s)</li>
             </ul>
           </div>
         </div>
@@ -65,7 +78,9 @@ export default function CSVPreview() {
             <ul className="list-disc list-inside space-y-1 mt-2">
               <li>Encodage UTF-8 requis pour les caractères accentués</li>
               <li>Utilisez des guillemets pour les textes contenant des virgules</li>
-              <li>La colonne "réponse" doit contenir 1, 2 ou 3 uniquement</li>
+              <li>Format recommandé : utilisez "choix1", "choix2" ou "choix3" dans la colonne bonne_reponse</li>
+              <li>Format alternatif : utilisez 1, 2 ou 3 dans la colonne réponse</li>
+              <li>Détection automatique du format lors de l'import</li>
               <li>Maximum 100 questions par import</li>
             </ul>
           </AlertDescription>
