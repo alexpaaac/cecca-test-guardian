@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { LoginForm } from '@/components/test/LoginForm';
@@ -6,7 +5,7 @@ import { QuizInterface } from '@/components/test/QuizInterface';
 import { TestCancelled } from '@/components/test/TestCancelled';
 import { TestCompleted } from '@/components/test/TestCompleted';
 import ClassificationGame from '@/components/test/ClassificationGame';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Quiz, TestSession, ClassificationGameResult } from '@/types';
@@ -14,60 +13,60 @@ import type { Quiz, TestSession, ClassificationGameResult } from '@/types';
 export default function TestInterface() {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [testSession, setTestSession] = useLocalStorage<TestSession | null>('currentTestSession', null);
-  const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game'>('login');
+  const [view, setView] = useState<'login' | 'quiz' | 'classification' | 'completed' | 'cancelled'>('login');
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
 
+  // Initialize view based on current session
   useEffect(() => {
     if (!testSession) {
-      setTestStatus('login');
+      setView('login');
       setCurrentQuiz(null);
       return;
     }
 
-    // Try to find the quiz for this session
+    // Find the quiz for this session
     const sessionQuiz = quizzes.find(q => q.id === testSession.quizId);
-    if (sessionQuiz) {
-      setCurrentQuiz(sessionQuiz);
+    if (!sessionQuiz && testSession.status === 'in_progress') {
+      // Quiz was deleted, reset session
+      setTestSession(null);
+      setView('login');
+      return;
     }
 
-    // Set status based on session status
-    switch (testSession.status) {
-      case 'cancelled':
-        setTestStatus('cancelled');
-        break;
-      case 'completed':
-        setTestStatus('completed');
-        break;
-      case 'classification_game':
-        setTestStatus('classification_game');
-        break;
-      case 'in_progress':
-        if (sessionQuiz) {
-          setTestStatus('in_progress');
-        } else {
-          // Quiz not found, reset session
-          setTestSession(null);
-          setTestStatus('login');
-        }
-        break;
-      default:
-        setTestStatus('login');
+    setCurrentQuiz(sessionQuiz || null);
+
+    // Set view based on session status
+    if (testSession.status === 'cancelled') {
+      setView('cancelled');
+    } else if (testSession.status === 'completed') {
+      setView('completed');
+    } else if (testSession.status === 'classification_game') {
+      setView('classification');
+    } else if (testSession.status === 'in_progress') {
+      setView('quiz');
+    } else {
+      setView('login');
     }
   }, [testSession, quizzes, setTestSession]);
 
   const handleLogin = (quiz: Quiz, session: TestSession) => {
     setCurrentQuiz(quiz);
     setTestSession(session);
-    setTestStatus('in_progress');
+    setView('quiz');
   };
 
-  const handleTestComplete = (session: TestSession) => {
-    setTestSession(session);
-    if (session.status === 'classification_game') {
-      setTestStatus('classification_game');
+  const handleQuizComplete = (completedSession: TestSession) => {
+    setTestSession(completedSession);
+    if (completedSession.status === 'classification_game') {
+      setView('classification');
     } else {
-      setTestStatus('completed');
+      setView('completed');
     }
+  };
+
+  const handleQuizCancel = (cancelledSession: TestSession) => {
+    setTestSession(cancelledSession);
+    setView('cancelled');
   };
 
   const handleClassificationComplete = (result: ClassificationGameResult) => {
@@ -81,16 +80,17 @@ export default function TestInterface() {
     };
 
     setTestSession(completedSession);
-    setTestStatus('completed');
+    setView('completed');
   };
 
-  const handleTestCancelled = (session: TestSession) => {
-    setTestSession(session);
-    setTestStatus('cancelled');
+  const handleRestart = () => {
+    setTestSession(null);
+    setCurrentQuiz(null);
+    setView('login');
   };
 
-  // Create a mock candidate object for compatibility with existing components
-  const mockCandidate = testSession?.candidateInfo ? {
+  // Create candidate object for completed view
+  const candidate = testSession?.candidateInfo ? {
     id: 'temp-id',
     firstName: testSession.candidateInfo.firstName || 'Candidat',
     lastName: testSession.candidateInfo.lastName || 'Test',
@@ -104,51 +104,66 @@ export default function TestInterface() {
     createdAt: new Date(),
   } : null;
 
-  const handleStartNewTest = () => {
-    setTestSession(null);
-    setCurrentQuiz(null);
-    setTestStatus('login');
-  };
-
   return (
     <Layout title="Test RH Collaborateur">
-      {testStatus === 'login' && (
+      {view === 'login' && (
         <LoginForm onLogin={handleLogin} />
       )}
-      
-      {testStatus === 'in_progress' && currentQuiz && testSession && (
+
+      {view === 'quiz' && currentQuiz && testSession && (
         <QuizInterface 
           quiz={currentQuiz}
           session={testSession}
-          onComplete={handleTestComplete}
-          onCancel={handleTestCancelled}
+          onComplete={handleQuizComplete}
+          onCancel={handleQuizCancel}
         />
       )}
-      
-      {testStatus === 'classification_game' && (
+
+      {view === 'classification' && (
         <ClassificationGame onComplete={handleClassificationComplete} />
       )}
-      
-      {testStatus === 'completed' && mockCandidate && testSession && (
+
+      {view === 'completed' && candidate && testSession && (
         <TestCompleted 
-          candidate={mockCandidate}
+          candidate={candidate}
           session={testSession}
         />
       )}
-      
-      {testStatus === 'cancelled' && (
+
+      {view === 'cancelled' && (
         <TestCancelled />
       )}
-      
-      {/* Fallback for error states */}
-      {!['login', 'in_progress', 'classification_game', 'completed', 'cancelled'].includes(testStatus) && (
+
+      {/* Error state fallback */}
+      {view === 'quiz' && (!currentQuiz || !testSession) && (
         <div className="max-w-md mx-auto">
           <Card>
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                Une erreur s'est produite. Veuillez recommencer.
+            <CardHeader>
+              <CardTitle className="text-center text-destructive">Erreur</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                Une erreur s'est produite lors du chargement du test.
               </p>
-              <Button onClick={handleStartNewTest}>
+              <Button onClick={handleRestart} variant="outline">
+                Recommencer
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {view === 'completed' && (!candidate || !testSession) && (
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-destructive">Erreur</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                Impossible d'afficher les résultats.
+              </p>
+              <Button onClick={handleRestart} variant="outline">
                 Recommencer
               </Button>
             </CardContent>
