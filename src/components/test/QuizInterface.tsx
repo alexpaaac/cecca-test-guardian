@@ -31,11 +31,11 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   // Get questions for this quiz
   const questions = allQuestions.filter(q => quiz.questions.includes(q.id));
   
-  // Initialize timer with current question's specific time (prioritize question-level config)
+  // Initialize timer with question's timePerQuestion from template configuration
   const getCurrentQuestionTime = () => {
     const currentQ = questions[currentQuestionIndex];
-    // Prioritize question-level timePerQuestion over quiz-level
-    return currentQ?.timePerQuestion || quiz.timePerQuestion || 60;
+    // Use the question's individual timePerQuestion configured in the template
+    return currentQ?.timePerQuestion || 60;
   };
   
   const [timeLeft, setTimeLeft] = useState(() => getCurrentQuestionTime());
