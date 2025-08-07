@@ -20,6 +20,7 @@ export function QuizTemplateManager() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<QuizTemplate | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [questionTimes, setQuestionTimes] = useState<{ [questionId: string]: number }>({});
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingQuestion, setIsCreatingQuestion] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -80,6 +81,15 @@ export function QuizTemplateManager() {
       timePerQuestion: template.timePerQuestion,
     });
     setSelectedQuestions(template.questions);
+    
+    // Initialiser les temps des questions depuis les questions existantes
+    const times: { [questionId: string]: number } = {};
+    template.questions.forEach(questionId => {
+      const question = allQuestions.find(q => q.id === questionId);
+      times[questionId] = question?.timePerQuestion || template.timePerQuestion;
+    });
+    setQuestionTimes(times);
+    
     setIsCreating(true);
   };
 
@@ -116,11 +126,44 @@ export function QuizTemplateManager() {
   };
 
   const handleQuestionToggle = (questionId: string) => {
-    setSelectedQuestions(prev =>
-      prev.includes(questionId)
+    const question = allQuestions.find(q => q.id === questionId);
+    if (!question) return;
+
+    setSelectedQuestions(prev => {
+      const newSelected = prev.includes(questionId)
         ? prev.filter(id => id !== questionId)
-        : [...prev, questionId]
-    );
+        : [...prev, questionId];
+      
+      // Initialiser le temps pour la nouvelle question sélectionnée
+      if (!prev.includes(questionId)) {
+        setQuestionTimes(prevTimes => ({
+          ...prevTimes,
+          [questionId]: question.timePerQuestion || templateForm.timePerQuestion
+        }));
+      } else {
+        // Supprimer le temps pour la question désélectionnée
+        setQuestionTimes(prevTimes => {
+          const newTimes = { ...prevTimes };
+          delete newTimes[questionId];
+          return newTimes;
+        });
+      }
+      
+      return newSelected;
+    });
+  };
+
+  const handleQuestionTimeChange = (questionId: string, time: number) => {
+    setQuestionTimes(prev => ({
+      ...prev,
+      [questionId]: time
+    }));
+  };
+
+  const getTotalEstimatedTime = () => {
+    return selectedQuestions.reduce((total, questionId) => {
+      return total + (questionTimes[questionId] || templateForm.timePerQuestion);
+    }, 0);
   };
 
   const resetForm = () => {
@@ -132,6 +175,7 @@ export function QuizTemplateManager() {
       timePerQuestion: 60,
     });
     setSelectedQuestions([]);
+    setQuestionTimes({});
   };
 
   const getRoleIcon = (role: string) => {
@@ -420,7 +464,7 @@ export function QuizTemplateManager() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="timePerQuestion">Temps par question (secondes)</Label>
+                      <Label htmlFor="timePerQuestion">Temps par défaut (secondes)</Label>
                       <Input
                         id="timePerQuestion"
                         type="number"
@@ -431,7 +475,7 @@ export function QuizTemplateManager() {
                         className="rounded-xl"
                       />
                       <div className="text-xs text-muted-foreground">
-                        ⏱️ Temps total estimé: <strong>{Math.round((selectedQuestions.length * templateForm.timePerQuestion) / 60)} minutes</strong>
+                        ⏱️ Temps total estimé: <strong>{Math.round(getTotalEstimatedTime() / 60)} minutes</strong>
                       </div>
                     </div>
 
@@ -517,6 +561,19 @@ export function QuizTemplateManager() {
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Catégorie: {question.category}
                                 </p>
+                              )}
+                              {selectedQuestions.includes(question.id) && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Label className="text-xs">Temps (sec):</Label>
+                                  <Input
+                                    type="number"
+                                    min="30"
+                                    max="300"
+                                    value={questionTimes[question.id] || question.timePerQuestion || templateForm.timePerQuestion}
+                                    onChange={(e) => handleQuestionTimeChange(question.id, parseInt(e.target.value) || 60)}
+                                    className="w-20 h-8 text-xs rounded"
+                                  />
+                                </div>
                               )}
                             </div>
                           </div>
