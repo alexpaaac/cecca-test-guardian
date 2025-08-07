@@ -122,7 +122,7 @@ export default function TestInterface() {
       {view === 'classification' && testSession && (
         <ClassificationGame 
           session={testSession}
-          timePerQuestion={currentQuiz?.timePerQuestion || 300}
+          timePerQuestion={300}
           onComplete={handleClassificationComplete} 
         />
       )}

@@ -25,7 +25,7 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasWarning, setHasWarning] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(quiz.timePerQuestion || 60);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [totalTestTime, setTotalTestTime] = useState(0);
   const { toast } = useToast();
 
@@ -51,8 +51,8 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
 
   // Reset timer when question changes
   useEffect(() => {
-    setTimeLeft(quiz.timePerQuestion || 60);
-  }, [currentQuestionIndex, quiz.timePerQuestion]);
+    setTimeLeft(60);
+  }, [currentQuestionIndex]);
 
   // Anti-cheat system
   const handleVisibilityChange = useCallback(() => {

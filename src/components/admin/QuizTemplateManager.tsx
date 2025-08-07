@@ -29,7 +29,6 @@ export function QuizTemplateManager() {
     description: '',
     role: 'Chef de mission' as 'Chef de mission' | 'RH' | 'Auditeur',
     level: 'C1' as 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2',
-    timePerQuestion: 60,
   });
   const [questionForm, setQuestionForm] = useState({
     question: '',
@@ -57,7 +56,6 @@ export function QuizTemplateManager() {
       role: templateForm.role,
       level: templateForm.level,
       questions: selectedQuestions,
-      timePerQuestion: templateForm.timePerQuestion,
       createdAt: new Date(),
     };
 
@@ -78,7 +76,6 @@ export function QuizTemplateManager() {
       description: template.description,
       role: template.role,
       level: template.level,
-      timePerQuestion: template.timePerQuestion,
     });
     setSelectedQuestions(template.questions);
     
@@ -86,7 +83,7 @@ export function QuizTemplateManager() {
     const times: { [questionId: string]: number } = {};
     template.questions.forEach(questionId => {
       const question = allQuestions.find(q => q.id === questionId);
-      times[questionId] = question?.timePerQuestion || template.timePerQuestion;
+      times[questionId] = question?.timePerQuestion || 60;
     });
     setQuestionTimes(times);
     
@@ -103,7 +100,6 @@ export function QuizTemplateManager() {
       role: templateForm.role,
       level: templateForm.level,
       questions: selectedQuestions,
-      timePerQuestion: templateForm.timePerQuestion,
     };
 
     setTemplates(templates.map(t => t.id === editingTemplate.id ? updatedTemplate : t));
@@ -138,7 +134,7 @@ export function QuizTemplateManager() {
       if (!prev.includes(questionId)) {
         setQuestionTimes(prevTimes => ({
           ...prevTimes,
-          [questionId]: question.timePerQuestion || templateForm.timePerQuestion
+          [questionId]: question.timePerQuestion || 60
         }));
       } else {
         // Supprimer le temps pour la question désélectionnée
@@ -162,12 +158,12 @@ export function QuizTemplateManager() {
 
   const getTotalEstimatedTime = () => {
     return selectedQuestions.reduce((total, questionId) => {
-      return total + (questionTimes[questionId] || templateForm.timePerQuestion);
+      return total + (questionTimes[questionId] || 60);
     }, 0);
   };
 
   const getAverageQuestionTime = () => {
-    if (selectedQuestions.length === 0) return templateForm.timePerQuestion;
+    if (selectedQuestions.length === 0) return 60;
     return Math.round(getTotalEstimatedTime() / selectedQuestions.length);
   };
 
@@ -177,7 +173,6 @@ export function QuizTemplateManager() {
       description: '',
       role: 'Chef de mission',
       level: 'C1',
-      timePerQuestion: 60,
     });
     setSelectedQuestions([]);
     setQuestionTimes({});
@@ -469,16 +464,6 @@ export function QuizTemplateManager() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="timePerQuestion">Temps par défaut (secondes)</Label>
-                      <Input
-                        id="timePerQuestion"
-                        type="number"
-                        min="30"
-                        max="300"
-                        value={templateForm.timePerQuestion}
-                        onChange={(e) => setTemplateForm({ ...templateForm, timePerQuestion: parseInt(e.target.value) })}
-                        className="rounded-xl"
-                      />
                       <div className="text-xs text-muted-foreground space-y-1">
                         <div>⏱️ Temps total estimé: <strong>{Math.round(getTotalEstimatedTime() / 60)} min {getTotalEstimatedTime() % 60} sec</strong></div>
                         {selectedQuestions.length > 0 && (
@@ -577,7 +562,7 @@ export function QuizTemplateManager() {
                                     type="number"
                                     min="30"
                                     max="300"
-                                    value={questionTimes[question.id] || question.timePerQuestion || templateForm.timePerQuestion}
+                                    value={questionTimes[question.id] || question.timePerQuestion || 60}
                                     onChange={(e) => handleQuestionTimeChange(question.id, parseInt(e.target.value) || 60)}
                                     className="w-20 h-8 text-xs rounded"
                                   />
@@ -639,7 +624,7 @@ export function QuizTemplateManager() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {template.timePerQuestion}s par question
+                            Temps configuré par question
                           </div>
                           <div className="text-xs">
                             Créé le {new Date(template.createdAt).toLocaleDateString()}

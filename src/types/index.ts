@@ -16,7 +16,6 @@ export interface Quiz {
   questions: string[]; // Array of question IDs
   accessCode: string;
   status: 'active' | 'inactive';
-  timePerQuestion: number; // seconds
   role?: 'Candidat' | 'Chef de mission' | 'RH';
   hasClassificationGame?: boolean;
   createdAt: Date;
@@ -30,7 +29,6 @@ export interface QuizTemplate {
   role: 'Chef de mission' | 'RH' | 'Auditeur';
   level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
   questions: string[];
-  timePerQuestion: number;
   createdAt: Date;
 }
 
