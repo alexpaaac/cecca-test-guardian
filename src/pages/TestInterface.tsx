@@ -68,16 +68,16 @@ export default function TestInterface() {
   };
 
   // Create a mock employee object for compatibility with existing components
-  const mockCandidate = testSession ? {
+  const mockCandidate = testSession?.candidateInfo ? {
     id: 'temp-id',
-    firstName: testSession.candidateInfo.firstName,
-    lastName: testSession.candidateInfo.lastName,
-    email: testSession.candidateInfo.email,
-    manager: testSession.candidateInfo.manager,
-    managerEmail: testSession.candidateInfo.email,
-    department: testSession.candidateInfo.department,
-    level: testSession.candidateInfo.level,
-    role: testSession.candidateInfo.role,
+    firstName: testSession.candidateInfo.firstName || 'Candidat',
+    lastName: testSession.candidateInfo.lastName || 'Test',
+    email: testSession.candidateInfo.email || 'test@example.com',
+    manager: testSession.candidateInfo.manager || 'Manager',
+    managerEmail: testSession.candidateInfo.email || 'manager@example.com',
+    department: testSession.candidateInfo.department || 'Département',
+    level: testSession.candidateInfo.level || 'C1',
+    role: testSession.candidateInfo.role || 'Collaborateur',
     accessCode: 'temp-code',
     createdAt: new Date(),
   } : null;
