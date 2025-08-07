@@ -24,6 +24,7 @@ export function QuizManager() {
   const [quizForm, setQuizForm] = useState({
     name: '',
     description: '',
+    timePerQuestion: 60,
     hasClassificationGame: false,
   });
   const { toast } = useToast();
@@ -63,14 +64,14 @@ export function QuizManager() {
       questions: selectedQuestions,
       accessCode: generateAccessCode(),
       status: 'active',
-      timePerQuestion: 60,
+      timePerQuestion: quizForm.timePerQuestion,
       hasClassificationGame: quizForm.hasClassificationGame,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     setQuizzes([...quizzes, newQuiz]);
-    setQuizForm({ name: '', description: '', hasClassificationGame: false });
+    setQuizForm({ name: '', description: '', timePerQuestion: 60, hasClassificationGame: false });
     setSelectedQuestions([]);
     setIsCreating(false);
 
@@ -85,6 +86,7 @@ export function QuizManager() {
     setQuizForm({
       name: quiz.name,
       description: quiz.description,
+      timePerQuestion: quiz.timePerQuestion,
       hasClassificationGame: quiz.hasClassificationGame || false,
     });
     setSelectedQuestions(quiz.questions);
@@ -98,13 +100,14 @@ export function QuizManager() {
       name: quizForm.name,
       description: quizForm.description,
       questions: selectedQuestions,
+      timePerQuestion: quizForm.timePerQuestion,
       hasClassificationGame: quizForm.hasClassificationGame,
       updatedAt: new Date(),
     };
 
     setQuizzes(quizzes.map(q => q.id === editingQuiz.id ? updatedQuiz : q));
     setEditingQuiz(null);
-    setQuizForm({ name: '', description: '', hasClassificationGame: false });
+    setQuizForm({ name: '', description: '', timePerQuestion: 60, hasClassificationGame: false });
     setSelectedQuestions([]);
 
     toast({
@@ -168,6 +171,7 @@ export function QuizManager() {
         setQuizForm({
           name: template.name,
           description: template.description,
+          timePerQuestion: template.timePerQuestion,
           hasClassificationGame: false,
         });
         
@@ -188,7 +192,7 @@ export function QuizManager() {
   };
 
   const resetForm = () => {
-    setQuizForm({ name: '', description: '', hasClassificationGame: false });
+    setQuizForm({ name: '', description: '', timePerQuestion: 60, hasClassificationGame: false });
     setSelectedQuestions([]);
     setSelectedTemplate('');
     setIsCreating(false);
@@ -246,6 +250,23 @@ export function QuizManager() {
                 onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
                 placeholder="Description du questionnaire..."
               />
+            </div>
+
+            <div>
+              <Label htmlFor="time-per-question">Temps par question (secondes)</Label>
+              <Input
+                id="time-per-question"
+                type="number"
+                min="10"
+                max="300"
+                value={quizForm.timePerQuestion}
+                onChange={(e) => setQuizForm({ ...quizForm, timePerQuestion: parseInt(e.target.value) || 60 })}
+                placeholder="60"
+                className="rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Temps global par défaut. Les questions peuvent avoir leur propre temps spécifique.
+              </p>
             </div>
 
             <div className="space-y-3 p-4 bg-accent/5 rounded-xl border border-accent/10">

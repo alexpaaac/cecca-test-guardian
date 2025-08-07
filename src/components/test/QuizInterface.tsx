@@ -26,7 +26,13 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasWarning, setHasWarning] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(quiz.timePerQuestion || 60);
+  // Initialize timer with current question's specific time or quiz default
+  const getCurrentQuestionTime = () => {
+    const currentQ = questions[currentQuestionIndex];
+    return currentQ?.timePerQuestion || quiz.timePerQuestion || 60;
+  };
+  
+  const [timeLeft, setTimeLeft] = useState(getCurrentQuestionTime());
   const [totalTestTime, setTotalTestTime] = useState(0);
   const { toast } = useToast();
 
@@ -50,10 +56,10 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     }
   }, [timeLeft]);
 
-  // Reset timer when question changes
+  // Reset timer when question changes - use question-specific time
   useEffect(() => {
-    setTimeLeft(quiz.timePerQuestion || 60);
-  }, [currentQuestionIndex, quiz.timePerQuestion]);
+    setTimeLeft(getCurrentQuestionTime());
+  }, [currentQuestionIndex, questions]);
 
   // Anti-cheat system
   const handleVisibilityChange = useCallback(() => {
@@ -194,6 +200,28 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
 
     const score = questions.length > 0 ? Math.round((correctAnswers / questions.length) * 100) : 0;
 
+    // Check if classification game is enabled
+    if (quiz.hasClassificationGame) {
+      const classificationSession = {
+        ...session,
+        status: 'classification_game' as const,
+        answers: finalAnswers,
+        score,
+        completedAt: new Date(),
+        completionTime: totalTestTime,
+      };
+
+      setTestSessions(sessions => 
+        sessions.map(s => s.id === session.id ? classificationSession : s)
+      );
+
+      // Send webhook notification for quiz completion before classification game
+      await sendWebhookNotification(finalAnswers, score);
+
+      onComplete(classificationSession);
+      return;
+    }
+
     const completedSession = {
       ...session,
       status: 'completed' as const,
@@ -208,6 +236,12 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
     );
 
     // Send webhook notification
+    await sendWebhookNotification(finalAnswers, score);
+
+    onComplete(completedSession);
+  };
+
+  const sendWebhookNotification = async (finalAnswers: number[], score: number) => {
     try {
       const corrections = finalAnswers.map((answer, index) => 
         questions[index] ? answer === questions[index].correctAnswer : false
@@ -231,14 +265,10 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
       await fetch('https://alexpaac.app.n8n.cloud/webhook/10ce7334-f210-4720-b45b-e53f9bc7b400', {
         method: 'GET',
         mode: 'no-cors',
-        // Note: For GET requests, we'd need to send data as query parameters
-        // But since the webhook URL is configured for GET, we'll just trigger it
       });
     } catch (error) {
       console.error('Failed to send webhook:', error);
     }
-
-    onComplete(completedSession);
   };
 
   const formatTime = (seconds: number) => {
