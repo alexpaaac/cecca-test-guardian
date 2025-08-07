@@ -6,6 +6,8 @@ import { QuizInterface } from '@/components/test/QuizInterface';
 import { TestCancelled } from '@/components/test/TestCancelled';
 import { TestCompleted } from '@/components/test/TestCompleted';
 import ClassificationGame from '@/components/test/ClassificationGame';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Quiz, TestSession, ClassificationGameResult } from '@/types';
 
@@ -13,30 +15,45 @@ export default function TestInterface() {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [testSession, setTestSession] = useLocalStorage<TestSession | null>('currentTestSession', null);
   const [testStatus, setTestStatus] = useState<'login' | 'in_progress' | 'completed' | 'cancelled' | 'classification_game'>('login');
-
-  // Debug logs
-  console.log('TestInterface - testSession:', testSession);
-  console.log('TestInterface - testStatus:', testStatus);
-  console.log('TestInterface - currentQuiz:', currentQuiz);
+  const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
 
   useEffect(() => {
     if (!testSession) {
-      console.log('Setting testStatus to login - no testSession');
       setTestStatus('login');
-    } else if (testSession?.status === 'cancelled') {
-      console.log('Setting testStatus to cancelled');
-      setTestStatus('cancelled');
-    } else if (testSession?.status === 'completed') {
-      console.log('Setting testStatus to completed');
-      setTestStatus('completed');
-    } else if (testSession?.status === 'classification_game') {
-      console.log('Setting testStatus to classification_game');
-      setTestStatus('classification_game');
-    } else if (testSession?.status === 'in_progress' && currentQuiz) {
-      console.log('Setting testStatus to in_progress');
-      setTestStatus('in_progress');
+      setCurrentQuiz(null);
+      return;
     }
-  }, [testSession, currentQuiz]);
+
+    // Try to find the quiz for this session
+    const sessionQuiz = quizzes.find(q => q.id === testSession.quizId);
+    if (sessionQuiz) {
+      setCurrentQuiz(sessionQuiz);
+    }
+
+    // Set status based on session status
+    switch (testSession.status) {
+      case 'cancelled':
+        setTestStatus('cancelled');
+        break;
+      case 'completed':
+        setTestStatus('completed');
+        break;
+      case 'classification_game':
+        setTestStatus('classification_game');
+        break;
+      case 'in_progress':
+        if (sessionQuiz) {
+          setTestStatus('in_progress');
+        } else {
+          // Quiz not found, reset session
+          setTestSession(null);
+          setTestStatus('login');
+        }
+        break;
+      default:
+        setTestStatus('login');
+    }
+  }, [testSession, quizzes, setTestSession]);
 
   const handleLogin = (quiz: Quiz, session: TestSession) => {
     setCurrentQuiz(quiz);
@@ -56,8 +73,6 @@ export default function TestInterface() {
   const handleClassificationComplete = (result: ClassificationGameResult) => {
     if (!testSession) return;
     
-    const [testSessions, setTestSessions] = useLocalStorage<TestSession[]>('testSessions', []);
-    
     const completedSession = {
       ...testSession,
       status: 'completed' as const,
@@ -66,9 +81,6 @@ export default function TestInterface() {
     };
 
     setTestSession(completedSession);
-    setTestSessions(sessions => 
-      sessions.map(s => s.id === testSession.id ? completedSession : s)
-    );
     setTestStatus('completed');
   };
 
@@ -77,7 +89,7 @@ export default function TestInterface() {
     setTestStatus('cancelled');
   };
 
-  // Create a mock employee object for compatibility with existing components
+  // Create a mock candidate object for compatibility with existing components
   const mockCandidate = testSession?.candidateInfo ? {
     id: 'temp-id',
     firstName: testSession.candidateInfo.firstName || 'Candidat',
@@ -92,51 +104,56 @@ export default function TestInterface() {
     createdAt: new Date(),
   } : null;
 
-  console.log('TestInterface render - testStatus:', testStatus);
+  const handleStartNewTest = () => {
+    setTestSession(null);
+    setCurrentQuiz(null);
+    setTestStatus('login');
+  };
 
   return (
     <Layout title="Test RH Collaborateur">
       {testStatus === 'login' && (
-        <>
-          {console.log('Rendering LoginForm')}
-          <LoginForm onLogin={handleLogin} />
-        </>
+        <LoginForm onLogin={handleLogin} />
       )}
       
       {testStatus === 'in_progress' && currentQuiz && testSession && (
-        <>
-          {console.log('Rendering QuizInterface')}
-          <QuizInterface 
-            quiz={currentQuiz}
-            session={testSession}
-            onComplete={handleTestComplete}
-            onCancel={handleTestCancelled}
-          />
-        </>
+        <QuizInterface 
+          quiz={currentQuiz}
+          session={testSession}
+          onComplete={handleTestComplete}
+          onCancel={handleTestCancelled}
+        />
       )}
       
       {testStatus === 'classification_game' && (
-        <>
-          {console.log('Rendering ClassificationGame')}
-          <ClassificationGame onComplete={handleClassificationComplete} />
-        </>
+        <ClassificationGame onComplete={handleClassificationComplete} />
       )}
       
       {testStatus === 'completed' && mockCandidate && testSession && (
-        <>
-          {console.log('Rendering TestCompleted')}
-          <TestCompleted 
-            candidate={mockCandidate}
-            session={testSession}
-          />
-        </>
+        <TestCompleted 
+          candidate={mockCandidate}
+          session={testSession}
+        />
       )}
       
       {testStatus === 'cancelled' && (
-        <>
-          {console.log('Rendering TestCancelled')}
-          <TestCancelled />
-        </>
+        <TestCancelled />
+      )}
+      
+      {/* Fallback for error states */}
+      {!['login', 'in_progress', 'classification_game', 'completed', 'cancelled'].includes(testStatus) && (
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardContent className="text-center py-8">
+              <p className="text-muted-foreground mb-4">
+                Une erreur s'est produite. Veuillez recommencer.
+              </p>
+              <Button onClick={handleStartNewTest}>
+                Recommencer
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </Layout>
   );

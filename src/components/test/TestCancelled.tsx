@@ -48,7 +48,18 @@ export function TestCancelled() {
               contact@cecca.fr
             </a>
             
-            <div className="pt-4">
+            <div className="pt-4 space-x-4">
+              <Button 
+                onClick={() => {
+                  // Clear the test session to allow new tests
+                  localStorage.removeItem('currentTestSession');
+                  // Reload the page to reset all state
+                  window.location.href = '/test';
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Recommencer un test
+              </Button>
               <Button 
                 onClick={() => navigate('/')}
                 variant="outline"
