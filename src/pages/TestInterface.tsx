@@ -16,6 +16,17 @@ export default function TestInterface() {
   const [view, setView] = useState<'login' | 'quiz' | 'classification' | 'completed' | 'cancelled'>('login');
   const [quizzes] = useLocalStorage<Quiz[]>('quizzes', []);
 
+  const getClassificationGameTime = () => {
+    if (!currentQuiz) return 300;
+    
+    const templates = JSON.parse(localStorage.getItem('quizTemplates') || '[]');
+    const template = templates.find((t: any) => 
+      t.questions?.some((qId: string) => currentQuiz.questions?.includes(qId))
+    );
+    
+    return template?.classificationGameTime || 300;
+  };
+
   // Initialize view based on current session
   useEffect(() => {
     if (!testSession) {
@@ -122,7 +133,7 @@ export default function TestInterface() {
       {view === 'classification' && testSession && (
         <ClassificationGame 
           session={testSession}
-          timePerQuestion={300}
+          timePerQuestion={getClassificationGameTime()}
           onComplete={handleClassificationComplete} 
         />
       )}

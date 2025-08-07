@@ -34,8 +34,14 @@ export function QuizInterface({ quiz, session, onComplete, onCancel }: QuizInter
   // Initialize timer with question's timePerQuestion from template configuration
   const getCurrentQuestionTime = () => {
     const currentQ = questions[currentQuestionIndex];
-    // Use the question's individual timePerQuestion configured in the template
-    return currentQ?.timePerQuestion || 60;
+    if (!currentQ) return 60;
+    
+    // Get the quiz template to use configured question times
+    const templates = JSON.parse(localStorage.getItem('quizTemplates') || '[]');
+    const template = templates.find((t: any) => t.questions?.includes(currentQ.id));
+    
+    // Use template-configured time, fallback to question's timePerQuestion, then default 60s
+    return template?.questionTimes?.[currentQ.id] || currentQ.timePerQuestion || 60;
   };
   
   const [timeLeft, setTimeLeft] = useState(() => getCurrentQuestionTime());

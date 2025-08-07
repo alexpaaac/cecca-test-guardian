@@ -21,6 +21,7 @@ export function QuizTemplateManager() {
   const [editingTemplate, setEditingTemplate] = useState<QuizTemplate | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [questionTimes, setQuestionTimes] = useState<{ [questionId: string]: number }>({});
+  const [classificationGameTime, setClassificationGameTime] = useState<number>(300);
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingQuestion, setIsCreatingQuestion] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -56,6 +57,8 @@ export function QuizTemplateManager() {
       role: templateForm.role,
       level: templateForm.level,
       questions: selectedQuestions,
+      questionTimes: questionTimes,
+      classificationGameTime: classificationGameTime,
       createdAt: new Date(),
     };
 
@@ -79,13 +82,15 @@ export function QuizTemplateManager() {
     });
     setSelectedQuestions(template.questions);
     
-    // Initialiser les temps des questions depuis les questions existantes
+    // Initialiser les temps des questions depuis le template ou les questions existantes
     const times: { [questionId: string]: number } = {};
     template.questions.forEach(questionId => {
+      const templateTime = template.questionTimes?.[questionId];
       const question = allQuestions.find(q => q.id === questionId);
-      times[questionId] = question?.timePerQuestion || 60;
+      times[questionId] = templateTime || question?.timePerQuestion || 60;
     });
     setQuestionTimes(times);
+    setClassificationGameTime(template.classificationGameTime || 300);
     
     setIsCreating(true);
   };
@@ -100,6 +105,8 @@ export function QuizTemplateManager() {
       role: templateForm.role,
       level: templateForm.level,
       questions: selectedQuestions,
+      questionTimes: questionTimes,
+      classificationGameTime: classificationGameTime,
     };
 
     setTemplates(templates.map(t => t.id === editingTemplate.id ? updatedTemplate : t));
@@ -176,6 +183,7 @@ export function QuizTemplateManager() {
     });
     setSelectedQuestions([]);
     setQuestionTimes({});
+    setClassificationGameTime(300);
   };
 
   const getRoleIcon = (role: string) => {
@@ -574,6 +582,43 @@ export function QuizTemplateManager() {
                       )}
                     </div>
                   </div>
+
+                  {/* Configuration du jeu de classification */}
+                  {selectedQuestions.length > 0 && (
+                    <Card className="border-2 border-dashed border-muted-foreground/20">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Configuration du jeu de classification
+                        </CardTitle>
+                        <CardDescription className="text-sm">
+                          Configurez le temps alloué pour le jeu de classification des comptes
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-4">
+                          <Label htmlFor="classificationTime" className="text-sm font-medium">
+                            Temps alloué (secondes) :
+                          </Label>
+                          <Input
+                            id="classificationTime"
+                            type="number"
+                            min="60"
+                            max="900"
+                            value={classificationGameTime}
+                            onChange={(e) => setClassificationGameTime(parseInt(e.target.value) || 300)}
+                            className="w-32 rounded-xl"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            ({Math.round(classificationGameTime / 60)} min {classificationGameTime % 60} sec)
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Temps recommandé : 300 secondes (5 minutes) pour un jeu standard
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <div className="flex gap-3">
                     <Button

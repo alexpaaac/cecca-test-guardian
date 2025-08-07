@@ -29,6 +29,8 @@ export interface QuizTemplate {
   role: 'Chef de mission' | 'RH' | 'Auditeur';
   level: 'C1' | 'C2' | 'C3' | 'CS1' | 'CS2';
   questions: string[];
+  questionTimes: { [questionId: string]: number }; // Timer per question in seconds
+  classificationGameTime?: number; // Timer for classification game in seconds
   createdAt: Date;
 }
 
